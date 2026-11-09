@@ -118,7 +118,7 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
     <span class="sp"></span>
     <button id="fbtn" data-fopen style="font-weight:600">🔍 Filtro</button>
     <button id="exp">Exportar</button>
-    <button id="imp">Importar</button>
+    <button id="imp" style="display:none">Importar</button>
     <input type="file" id="file" accept=".json" hidden>
     <span class="row" id="cloudbar" style="display:none;gap:6px"><span class="pill d" id="sync" title="Estado da sincronização com a base compartilhada"></span><span class="small mut" id="who"></span><button id="out">Sair</button></span>
   </div>
@@ -208,6 +208,9 @@ if(store.get(KEY+"-ver",1)<2){items.forEach(i=>{if(i.stage==3)i.stage=LAST});sto
 if(store.get(KEY+"-ver",1)<3){items=items.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));store.set(KEY,items);store.set(KEY+"-ver",3)}
 if(view>9||view<0)view=0;
 const CLOUD=!!(SB_URL&&SB_KEY);
+const ADMIN="douglas.soares@oceanpact.com"; // só este login vê e usa o Importar
+const isAdmin=()=>!!me&&me.toLowerCase()===ADMIN;
+const showAdmin=()=>{$("#imp").style.display=isAdmin()?"":"none"};
 let sb=null,me=null,remote=new Map(),pushT=0,pushing=Promise.resolve(),syncSt="",chan=null;
 const save=()=>{store.set(KEY,items);syncPush()};
 $("#boats").innerHTML=BOATS.map(b=>`<option value="${esc(b)}">`).join("");
@@ -497,8 +500,9 @@ document.addEventListener("change",e=>{
   if(e.target.id=="tol"){tol=Math.max(0,+e.target.value||0);store.set(KEY+"-tol",tol);render()}});
 $("#wh").onchange=e=>{warnR=Math.max(0,+e.target.value||0);store.set(KEY+"-warny",warnR);render()};
 $("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({versao:2,exportadoEm:new Date().toISOString(),itens:items},null,1)],{type:"application/json"}));a.download="painel-pss-"+new Date().toISOString().slice(0,10)+".json";a.click()};
-$("#imp").onclick=()=>$("#file").click();
+$("#imp").onclick=()=>{if(isAdmin())$("#file").click()};
 $("#file").onchange=async e=>{
+  if(!isAdmin()){e.target.value="";return}
   try{
     const d=JSON.parse(await e.target.files[0].text());
     const legacy=Array.isArray(d),list=legacy?d:d.itens;
@@ -551,7 +555,7 @@ function onRemote(p){
   store.set(KEY,items);if(!$("#dlg").open)render();
 }
 async function enter(session){
-  me=session.user.email;gate(false,"");
+  me=session.user.email;gate(false,"");showAdmin();
   $("#who").textContent=me;$("#cloudbar").style.display="";setSync("busy","carregando…");
   const {data,error}=await sb.from("lancamentos").select("id,dados");
   if(error){console.error(error);setSync("err","⚠ erro ao carregar");alert("Não foi possível carregar a base compartilhada: "+error.message);return}
@@ -571,7 +575,7 @@ async function enter(session){
 }
 function leave(){
   if(chan&&sb){sb.removeChannel(chan);chan=null}
-  me=null;remote=new Map();items=[];store.set(KEY,items);
+  me=null;showAdmin();remote=new Map();items=[];store.set(KEY,items);
   $("#cloudbar").style.display="none";render();gate(true,"");
 }
 async function cloudStart(){
