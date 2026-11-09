@@ -99,6 +99,10 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
 .ti{display:flex;padding:3px 2px;font-size:13px;cursor:pointer;color:var(--ac)}
 .tn{display:flex;align-items:center;gap:2px}
 .tg{width:16px;flex:none;cursor:pointer;color:var(--mut);user-select:none;text-align:center}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
+#gform{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:22px;width:min(380px,100%)}
+#gform h2{margin:0 0 6px;font-size:18px}
+#gform input{width:100%}
 </style>
 </head>
 <body>
@@ -117,12 +121,26 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
     <button id="imp">Importar</button>
     <button id="lim">Limpar tudo</button>
     <input type="file" id="file" accept=".json" hidden>
+    <span class="row" id="cloudbar" style="display:none;gap:6px"><span class="pill d" id="sync" title="Estado da sincronização com a base compartilhada"></span><span class="small mut" id="who"></span><button id="out">Sair</button></span>
   </div>
   <div class="small mut" id="legend" style="margin-top:6px">Cor pela <b>data/hora prevista de coleta</b>: <span class="pill g">verde</span> falta mais de 1 h (ou coleta já realizada) · <span class="pill y">amarelo</span> falta menos de 1 h para a coleta · <span class="pill r">vermelho</span> chegou a hora da coleta (ou passou) sem a coleta ser realizada · <span class="pill d">cinza</span> concluído ou sem data.</div>
   <div class="small" id="fbar" style="margin-top:6px"></div>
 </header>
 <main id="app"></main>
 <aside class="drawer" id="drawer"></aside>
+
+<div id="gate">
+  <form id="gform">
+    <h2>Painel PSS / Carga Programada</h2>
+    <div class="small mut">Acesso restrito à equipe. Entre com seu e-mail e senha.</div>
+    <label>E-mail</label>
+    <input id="g-mail" type="email" required autocomplete="username">
+    <label>Senha</label>
+    <input id="g-pass" type="password" required autocomplete="current-password">
+    <div id="gmsg" class="small" style="color:var(--r);margin-top:8px;min-height:16px"></div>
+    <button class="pri" id="g-go" type="submit" style="margin-top:10px;width:100%">Entrar</button>
+  </form>
+</div>
 
 <dialog id="dlg">
   <form method="dialog" id="frm">
@@ -170,7 +188,11 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
   </form>
 </dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+/* ===== BASE COMPARTILHADA (Supabase) — preencha as duas linhas abaixo. Vazio = modo local (dados só neste navegador). ===== */
+const SB_URL="https://rlztljizcnczbkdqrefm.supabase.co";
+const SB_KEY="sb_publishable_PFCK56iHeGP2JdahJ6c1bg_9hiwCJmU";   // chave "publishable" (pública). NUNCA colocar aqui a "secret" / "service_role"
 const BOATS=["AH Giorgio P.","AH Liguria","AH Valletta","AH Varazze","Austral Abrolhos","CBO Alessandra","CBO Aliança","CBO Anita","CBO Arpoador","CBO Atlântico","CBO Bianca","CBO Bossa Nova","CBO Carolina","CBO Copacabana","CBO Endeavour","CBO Energy","CBO Flamengo","CBO Guanabara","CBO Iguaçu","CBO Ipanema","CBO Isabella","CBO Itajaí","CBO Manoella","CBO Oceana","CBO Pacífico","CBO Parintins","CBO Renata","CBO Supporter","CBO Terra Brasilis","CBO Wave","CBO Wiser","Fernando de Noronha","Ilha da Trindade","Ilha de Santana","Ilha de São Sebastião","Ilha do Cabo Frio","Ilha do Marajó","Ilha do Mosqueiro","Jim O'Brien","Macaé","Martin Vaz","Ocean Stalwart","Parcel das Feiticeiras","Parcel das Paredes","Parcel das Timbebas","Parcel de Manuel Luís","Parcel do Badejo","Parcel do Bandolim","Parcel dos Meros","Parcel dos Reis","Rochedo de São Paulo","Rochedo de São Pedro","Seward Johnson"];
 const TRANSP=["APOIO NORDESTE","BIG LOG","ELOIM","FWM","GOD EXPRESS","LRS","RIKER TRANSPORTES","SER LOG","SHJ COMERCIAL OFFSHORE","SILVA AMARAL"];
 const STAGES=["Em separação / Aguardando listagem de materiais para emissão de NF","Em processo de emissão de NF","NF emitida","Coleta realizada","Concluído / Entrega realizada"];
@@ -186,7 +208,9 @@ if(store.get(KEY+"-ver",1)<2){items.forEach(i=>{if(i.stage==3)i.stage=LAST});sto
 // v3: remove, uma única vez, os lançamentos fictícios que o antigo botão "Exemplo" gravou (id começa com "ex" + número, ou observação "EXEMPLO…")
 if(store.get(KEY+"-ver",1)<3){items=items.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));store.set(KEY,items);store.set(KEY+"-ver",3)}
 if(view>9||view<0)view=0;
-const save=()=>store.set(KEY,items);
+const CLOUD=!!(SB_URL&&SB_KEY);
+let sb=null,me=null,remote=new Map(),pushT=0,pushing=Promise.resolve(),syncSt="",chan=null;
+const save=()=>{store.set(KEY,items);syncPush()};
 $("#boats").innerHTML=BOATS.map(b=>`<option value="${esc(b)}">`).join("");
 $("#f-stage").innerHTML=STAGES.map((s,i)=>`<option value="${i}">${s}</option>`).join("");
 $("#wh").value=warnR;
@@ -440,11 +464,12 @@ $("#frm").addEventListener("submit",e=>{
   }
   stampForm();
   const o={boat,transp:$("#f-transp").value.trim(),local:$("#f-local").value.trim(),coleta:$("#f-coleta").value,prev,conf:$("#f-conf").value,real:$("#f-real").value,nfEm:$("#f-nf").value,coletaReal:$("#f-colr").value,stage:+$("#f-stage").value,obs:$("#f-obs").value.trim(),atrasos:draftAt};
-  if(editing)Object.assign(editing,o);else items.push({id:Date.now()+Math.random().toString(36).slice(2,6),...o});
+  if(editing){const cur=items.find(i=>String(i.id)==String(editing.id));if(cur)Object.assign(cur,o);else items.push({...editing,...o})}
+  else items.push({id:Date.now()+Math.random().toString(36).slice(2,6),...o});
   save();render();
 });
 $("#f-cancel").onclick=()=>$("#dlg").close();
-$("#f-del").onclick=()=>{if(editing&&confirm("Excluir este lançamento (e os atrasos registrados nele)?")){items=items.filter(i=>i!==editing);save();$("#dlg").close();render()}};
+$("#f-del").onclick=()=>{if(editing&&confirm("Excluir este lançamento (e os atrasos registrados nele)?")){const eid=String(editing.id);items=items.filter(i=>String(i.id)!=eid);save();$("#dlg").close();render()}};
 $("#novo").onclick=()=>openForm();
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-tab]");if(t){tab=t.dataset.tab;store.set(KEY+"-tab",tab);render();return}
@@ -472,7 +497,7 @@ document.addEventListener("change",e=>{
   if(id=="fcmp"){CMP=v;store.set(KEY+"-cmp",CMP);render();return}
   if(e.target.id=="tol"){tol=Math.max(0,+e.target.value||0);store.set(KEY+"-tol",tol);render()}});
 $("#wh").onchange=e=>{warnR=Math.max(0,+e.target.value||0);store.set(KEY+"-warny",warnR);render()};
-$("#lim").onclick=()=>{if(items.length&&confirm("Apagar todos os lançamentos?")){items=[];save();render()}};
+$("#lim").onclick=()=>{if(items.length&&confirm(CLOUD?"Apagar TODOS os lançamentos da base compartilhada? Isso apaga para TODA a equipe e não dá para desfazer (exporte antes, se precisar de cópia).":"Apagar todos os lançamentos?")){items=[];save();render()}};
 $("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({versao:2,exportadoEm:new Date().toISOString(),itens:items},null,1)],{type:"application/json"}));a.download="painel-pss-"+new Date().toISOString().slice(0,10)+".json";a.click()};
 $("#imp").onclick=()=>$("#file").click();
 $("#file").onchange=async e=>{
@@ -480,7 +505,7 @@ $("#file").onchange=async e=>{
     const d=JSON.parse(await e.target.files[0].text());
     const legacy=Array.isArray(d),list=legacy?d:d.itens;
     if(!Array.isArray(list))throw 0;
-    if(confirm("Substituir os lançamentos atuais pelos do arquivo?")){
+    if(confirm(CLOUD?"Substituir TODOS os lançamentos da base compartilhada pelos do arquivo? Isso vale para toda a equipe.":"Substituir os lançamentos atuais pelos do arquivo?")){
       items=list.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));
       if(legacy)items.forEach(i=>{if(i.stage==3)i.stage=LAST}); // arquivo da versão anterior (sem a etapa Coleta realizada)
       save();render();
@@ -488,8 +513,89 @@ $("#file").onchange=async e=>{
   }catch(x){alert("Arquivo inválido.")}
   e.target.value="";
 };
-setInterval(()=>{if(!$("#dlg").open)render()},60000);
+/* ---------- Base compartilhada (Supabase): login, gravação e tempo real ---------- */
+// JSON com chaves ordenadas: o Postgres (jsonb) reordena as chaves, então compare sempre desta forma
+const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x=="object"&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+function setSync(s,t){syncSt=s;const e=$("#sync");if(!e)return;e.textContent=t;e.className="pill "+(s=="ok"?"g":s=="err"?"r":"y")}
+function gate(show,msg){$("#gate").style.display=show?"flex":"none";if(msg!=null)$("#gmsg").textContent=msg}
+function syncPush(){
+  if(!CLOUD||!sb||!me)return;
+  clearTimeout(pushT);setSync("busy","salvando…");
+  pushT=setTimeout(()=>{pushT=0;pushing=pushing.then(doPush)},400);
+}
+async function doPush(){
+  try{
+    const cur=new Map(items.map(i=>[String(i.id),i])),up=[],del=[];
+    cur.forEach((it,id)=>{if(remote.get(id)!==canon(it))up.push({id,dados:it,atualizado_em:new Date().toISOString(),atualizado_por:me})});
+    remote.forEach((_,id)=>{if(!cur.has(id))del.push(id)});
+    if(up.length){const {error}=await sb.from("lancamentos").upsert(up);if(error)throw error;up.forEach(r=>remote.set(r.id,canon(r.dados)))}
+    if(del.length){const {error}=await sb.from("lancamentos").delete().in("id",del);if(error)throw error;del.forEach(id=>remote.delete(id))}
+    if(!pushT)setSync("ok","● sincronizado");
+  }catch(e){console.error(e);setSync("err","⚠ erro ao salvar — tentando de novo")}
+}
+async function reload(){
+  if(!sb||!me||pushT||syncSt=="busy")return;
+  const {data,error}=await sb.from("lancamentos").select("id,dados");
+  if(error){setSync("err","⚠ sem conexão");return}
+  remote=new Map(data.map(r=>[String(r.id),canon(r.dados)]));
+  items=data.map(r=>r.dados);store.set(KEY,items);
+  setSync("ok","● sincronizado");
+  if(!$("#dlg").open)render();
+}
+function onRemote(p){
+  if(p.eventType=="DELETE"){const id=String(p.old.id);remote.delete(id);items=items.filter(i=>String(i.id)!=id)}
+  else{
+    const d=p.new.dados,id=String(p.new.id),js=canon(d);
+    if(remote.get(id)===js)return; // eco da nossa própria gravação
+    remote.set(id,js);
+    const ix=items.findIndex(i=>String(i.id)==id);if(ix<0)items.push(d);else items[ix]=d;
+  }
+  store.set(KEY,items);if(!$("#dlg").open)render();
+}
+async function enter(session){
+  me=session.user.email;gate(false,"");
+  $("#who").textContent=me;$("#cloudbar").style.display="";setSync("busy","carregando…");
+  const {data,error}=await sb.from("lancamentos").select("id,dados");
+  if(error){console.error(error);setSync("err","⚠ erro ao carregar");alert("Não foi possível carregar a base compartilhada: "+error.message);return}
+  remote=new Map(data.map(r=>[String(r.id),canon(r.dados)]));
+  const local=items.slice();
+  items=data.map(r=>r.dados);
+  // primeira entrada neste navegador: oferece enviar lançamentos que existiam só aqui (uma única vez)
+  if(!store.get(KEY+"-cloudsync",false)&&local.length){
+    const novos=local.filter(i=>!remote.has(String(i.id)));
+    if(novos.length&&confirm(`Este navegador tem ${novos.length} lançamento(s) que ainda não estão na base compartilhada.\n\nOK = enviar para a base (a equipe passa a ver)\nCancelar = descartar os dados locais`))items=items.concat(novos);
+  }
+  store.set(KEY+"-cloudsync",true);store.set(KEY,items);
+  if(chan)sb.removeChannel(chan);
+  chan=sb.channel("lanc-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"lancamentos"},onRemote).subscribe(s=>{if(s=="SUBSCRIBED")reload();else if(s=="CHANNEL_ERROR"||s=="TIMED_OUT")setSync("err","⚠ tempo real caiu")});
+  render();
+  if(items.some(i=>remote.get(String(i.id))!==canon(i))||[...remote.keys()].some(id=>!items.some(i=>String(i.id)==id)))syncPush();else setSync("ok","● sincronizado");
+}
+function leave(){
+  if(chan&&sb){sb.removeChannel(chan);chan=null}
+  me=null;remote=new Map();items=[];store.set(KEY,items);
+  $("#cloudbar").style.display="none";render();gate(true,"");
+}
+async function cloudStart(){
+  if(!window.supabase){gate(true,"Não foi possível carregar a biblioteca de login (internet bloqueada?).");return}
+  sb=window.supabase.createClient(SB_URL,SB_KEY);
+  $("#gform").addEventListener("submit",async e=>{
+    e.preventDefault();$("#g-go").disabled=true;$("#gmsg").textContent="";
+    const {data,error}=await sb.auth.signInWithPassword({email:$("#g-mail").value.trim(),password:$("#g-pass").value});
+    $("#g-go").disabled=false;
+    if(error){$("#gmsg").textContent=/invalid/i.test(error.message)?"E-mail ou senha incorretos.":error.message;return}
+    $("#g-pass").value="";await enter(data.session);
+  });
+  $("#out").onclick=async()=>{if(!pushT&&syncSt!="busy"||confirm("Há alterações ainda sendo salvas. Sair mesmo assim?"))await sb.auth.signOut()};
+  sb.auth.onAuthStateChange(ev=>{if(ev=="SIGNED_OUT")setTimeout(leave,0)});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)reload()});
+  const {data}=await sb.auth.getSession();
+  if(data.session)await enter(data.session);else gate(true);
+}
+$("#dlg").addEventListener("close",()=>render());
+setInterval(()=>{if(syncSt=="err")syncPush();if(!$("#dlg").open)render()},60000);
 render();
+if(CLOUD){gate(true);cloudStart()}
 </script>
 </body>
 </html>
