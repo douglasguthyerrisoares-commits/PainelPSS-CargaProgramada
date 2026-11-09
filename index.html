@@ -119,7 +119,6 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
     <button id="fbtn" data-fopen style="font-weight:600">🔍 Filtro</button>
     <button id="exp">Exportar</button>
     <button id="imp">Importar</button>
-    <button id="lim">Limpar tudo</button>
     <input type="file" id="file" accept=".json" hidden>
     <span class="row" id="cloudbar" style="display:none;gap:6px"><span class="pill d" id="sync" title="Estado da sincronização com a base compartilhada"></span><span class="small mut" id="who"></span><button id="out">Sair</button></span>
   </div>
@@ -497,7 +496,6 @@ document.addEventListener("change",e=>{
   if(id=="fcmp"){CMP=v;store.set(KEY+"-cmp",CMP);render();return}
   if(e.target.id=="tol"){tol=Math.max(0,+e.target.value||0);store.set(KEY+"-tol",tol);render()}});
 $("#wh").onchange=e=>{warnR=Math.max(0,+e.target.value||0);store.set(KEY+"-warny",warnR);render()};
-$("#lim").onclick=()=>{if(items.length&&confirm(CLOUD?"Apagar TODOS os lançamentos da base compartilhada? Isso apaga para TODA a equipe e não dá para desfazer (exporte antes, se precisar de cópia).":"Apagar todos os lançamentos?")){items=[];save();render()}};
 $("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({versao:2,exportadoEm:new Date().toISOString(),itens:items},null,1)],{type:"application/json"}));a.download="painel-pss-"+new Date().toISOString().slice(0,10)+".json";a.click()};
 $("#imp").onclick=()=>$("#file").click();
 $("#file").onchange=async e=>{
