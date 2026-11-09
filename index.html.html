@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel PSS / Carga Programada</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1b2733;--mut:#66788a;--bd:#d9e0e7;--g:#1e9e57;--gb:#e3f6ec;--y:#d99a00;--yb:#fff4d1;--r:#d63b3b;--rb:#fde3e3;--d:#5b6b7b;--db:#e8ecf0;--ac:#0b5ea8}
+@media(prefers-color-scheme:dark){:root{--bg:#10171e;--card:#18222c;--tx:#e6edf3;--mut:#94a6b8;--bd:#2a3a49;--gb:#143525;--yb:#3b3110;--rb:#40191b;--db:#222d38;--ac:#5aa9ec;--g:#3ec97e;--y:#f0b429;--r:#ef6b6b;--d:#8fa1b3}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+h1{font-size:17px;margin:0 0 8px}
+h3{margin:18px 0 8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.views button.on,.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tabs button{font-weight:600;padding:7px 14px}
+input,select,textarea{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:6px 8px}
+main{padding:14px 16px}
+.sp{flex:1}
+.mut{color:var(--mut)}
+.small{font-size:12px}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.g{background:var(--gb);color:var(--g)}.y{background:var(--yb);color:var(--y)}.r{background:var(--rb);color:var(--r)}.d{background:var(--db);color:var(--d)}
+.bl-g{border-left:5px solid var(--g)}.bl-y{border-left:5px solid var(--y)}.bl-r{border-left:5px solid var(--r)}.bl-d{border-left:5px solid var(--d)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;cursor:pointer}
+.card:hover{border-color:var(--ac)}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.kan{display:grid;gap:10px;grid-template-columns:repeat(5,minmax(210px,1fr));overflow-x:auto}
+.col{background:var(--db);border-radius:8px;padding:8px;min-height:120px}
+.col h3{margin:2px 4px 8px;font-size:13px}
+.col .card{margin-bottom:8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd)}
+th,td{padding:7px 9px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mut);background:var(--db)}
+tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--db)}
+.bar{height:8px;background:var(--db);border-radius:4px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%}
+.f-g{background:var(--g)}.f-y{background:var(--y)}.f-r{background:var(--r)}.f-d{background:var(--d)}
+.board{background:#0b1117;color:#ffd24a;font-family:Consolas,monospace;border-radius:8px;padding:6px}
+.board .br{display:grid;grid-template-columns:2fr 1.6fr 1.6fr 1fr 1fr 1fr 1.8fr 1.4fr;gap:8px;padding:8px 10px;border-bottom:1px solid #1d2a36;cursor:pointer}
+.board .br:hover{background:#121b24}
+.board .hd{color:#7d8fa0;font-size:12px;cursor:default}
+.board .cr{color:#ff6b6b}.board .cy{color:#ffd24a}.board .cg{color:#4cd98a}.board .cd{color:#8fa1b3}
+.tl-r{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.tl-t{position:relative;height:28px;background:var(--db);border-radius:4px}
+.tl-seg{position:absolute;top:11px;height:6px;border-radius:3px}
+.tl-m{position:absolute;top:6px;width:16px;height:16px;margin-left:-8px;border-radius:50%;border:3px solid;background:var(--card)}
+.tl-m.f{background:currentColor}
+.tl-now{position:absolute;top:0;bottom:0;width:2px;background:var(--r)}
+.tl-ax{display:flex;justify-content:space-between;margin-left:158px;color:var(--mut);font-size:11px}
+.kpi{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:14px}
+.kpi div{border-radius:8px;padding:12px;text-align:center}
+.kpi b{display:block;font-size:30px;line-height:1.1}
+.kpi b.sm{font-size:18px;line-height:1.3}
+.day{margin:0 0 6px;font-size:14px;border-bottom:2px solid var(--ac);padding-bottom:3px;margin-top:14px}
+.ag{display:grid;grid-template-columns:150px 1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);cursor:pointer;align-items:center}
+.sw{display:grid;grid-template-columns:170px 1fr 150px;gap:10px;align-items:center;padding:10px;background:var(--card);border:1px solid var(--bd);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.stp{display:flex;align-items:center}
+.stp span{width:20px;height:20px;border-radius:50%;background:var(--db);border:2px solid var(--bd);flex:none}
+.stp em{flex:1;height:3px;background:var(--bd)}
+.stp .dn{background:var(--ac);border-color:var(--ac)}.stp .cu{background:var(--card);border-color:var(--ac);box-shadow:0 0 0 3px var(--db)}
+.stl{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:3px;gap:4px}
+.cd-big{font-size:26px;font-weight:700;margin:4px 0}
+.fleet{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.tile{border-radius:6px;padding:8px;border:1px dashed var(--bd);color:var(--mut);font-size:12px;min-height:58px}
+.tile.has{border-style:solid;cursor:pointer;color:var(--tx)}
+.tile b{display:block;font-size:13px}
+.an2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.an2 table td:nth-child(2){min-width:150px}
+dialog{border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);width:min(480px,94vw);max-height:92vh;overflow:auto;padding:16px}
+dialog::backdrop{background:#0008}
+label{display:block;margin:8px 0 3px;font-size:12px;color:var(--mut)}
+dialog input,dialog select,dialog textarea{width:100%}
+fieldset{border:1px solid var(--bd);border-radius:8px;margin:14px 0 0;padding:2px 10px 10px}
+legend{font-size:12px;font-weight:600;padding:0 6px}
+.hist div{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;border-top:1px solid var(--bd)}
+.hist button{padding:0 6px;color:var(--r)}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+.fp{display:grid;gap:12px 18px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.dd{position:relative}
+.ddt{font-weight:600;margin-bottom:4px;font-size:13px}
+.ddb{width:100%;display:flex;justify-content:space-between;text-align:left;font-size:13px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(470px,100vw);background:var(--db);z-index:40;box-shadow:-6px 0 24px #0005;transform:translateX(106%);transition:transform .2s;display:flex;flex-direction:column;border-top-left-radius:18px}
+.drawer.open{transform:none}
+.dh{display:flex;align-items:baseline;gap:18px;padding:18px 22px 12px}
+.dh b{font-size:17px}
+.dh .lim{margin-left:auto;color:var(--r);font-weight:700;cursor:pointer}
+.dh .fec{cursor:pointer}
+.dbody{overflow:auto;padding:6px 22px 28px;flex:1}
+.drawer .fp{grid-template-columns:1fr 1fr;gap:16px 26px}
+.ddp{position:relative;margin-top:2px;background:var(--card);border:1px solid var(--bd);border-radius:6px;max-height:320px;overflow:auto;padding:6px;box-shadow:0 6px 18px #0003}
+.ddp label{display:flex;gap:6px;align-items:center;margin:0;padding:3px 2px;font-size:13px;color:var(--tx);cursor:pointer}
+.ddp input[type=checkbox]{width:auto}
+.ti{display:flex;padding:3px 2px;font-size:13px;cursor:pointer;color:var(--ac)}
+.tn{display:flex;align-items:center;gap:2px}
+.tg{width:16px;flex:none;cursor:pointer;color:var(--mut);user-select:none;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Painel PSS / Carga Programada</h1>
+  <div class="row tabs" id="tabs"></div>
+  <div class="row views" id="views" style="margin-top:8px"></div>
+  <div class="row" style="margin-top:8px">
+    <button class="pri" id="novo">+ Novo lançamento</button>
+    <span class="row" id="pfilters">
+      <label style="margin:0;display:flex;gap:4px;align-items:center" title="Amarelo quando faltar menos que isso para o horário de coleta. Vermelho a partir do horário da coleta.">amarelo se faltar menos de <input id="wh" type="number" min="0" step="0.5" value="1" style="width:55px"> h para a coleta</label>
+    </span>
+    <span class="sp"></span>
+    <button id="fbtn" data-fopen style="font-weight:600">🔍 Filtro</button>
+    <button id="exp">Exportar</button>
+    <button id="imp">Importar</button>
+    <button id="lim">Limpar tudo</button>
+    <input type="file" id="file" accept=".json" hidden>
+  </div>
+  <div class="small mut" id="legend" style="margin-top:6px">Cor pela <b>data/hora prevista de coleta</b>: <span class="pill g">verde</span> falta mais de 1 h (ou coleta já realizada) · <span class="pill y">amarelo</span> falta menos de 1 h para a coleta · <span class="pill r">vermelho</span> chegou a hora da coleta (ou passou) sem a coleta ser realizada · <span class="pill d">cinza</span> concluído ou sem data.</div>
+  <div class="small" id="fbar" style="margin-top:6px"></div>
+</header>
+<main id="app"></main>
+<aside class="drawer" id="drawer"></aside>
+
+<dialog id="dlg">
+  <form method="dialog" id="frm">
+    <h3 id="dt" style="margin:0 0 4px">Lançamento</h3>
+    <label>Barco (selecione ou digite)</label>
+    <input id="f-boat" list="boats" required autocomplete="off">
+    <datalist id="boats"></datalist>
+    <label>Transportadora (selecione ou digite)</label>
+    <input id="f-transp" list="transps" autocomplete="off">
+    <datalist id="transps"></datalist>
+    <label>Local de entrega / Atracação</label>
+    <input id="f-local" autocomplete="off">
+    <label>Data e horário previstos de coleta</label>
+    <input id="f-coleta" type="datetime-local">
+    <label>Horário previsto de atracação</label>
+    <input id="f-prev" type="datetime-local">
+    <label>Horário confirmado de atracação</label>
+    <input id="f-conf" type="datetime-local">
+    <label>Data/hora da emissão da NF (preenche sozinho ao chegar em “NF emitida”)</label>
+    <input id="f-nf" type="datetime-local">
+    <label>Data/hora da coleta realizada (preenche sozinho ao chegar em “Coleta realizada”)</label>
+    <input id="f-colr" type="datetime-local">
+    <label>Data/hora da entrega / atracação real (preenche sozinho ao concluir; ajuste se foi outro)</label>
+    <input id="f-real" type="datetime-local">
+    <fieldset>
+      <legend>Atraso / reprogramação da atracação</legend>
+      <div class="small mut">O barco avisou um horário e não atracou? Informe o novo horário previsto e o motivo: o atraso entra na aba Análise de dados de entrega.</div>
+      <label>Novo horário previsto de atracação</label>
+      <input id="f-novo" type="datetime-local">
+      <label>Motivo do atraso (selecione um já usado ou digite)</label>
+      <input id="f-motivo" list="motivos" autocomplete="off">
+      <datalist id="motivos"></datalist>
+      <div class="hist" id="hist"></div>
+    </fieldset>
+    <label>Etapa</label>
+    <select id="f-stage"></select>
+    <label>Observação</label>
+    <textarea id="f-obs" rows="3"></textarea>
+    <div class="row" style="margin-top:14px">
+      <button type="button" id="f-del" style="color:var(--r)">Excluir</button>
+      <span class="sp"></span>
+      <button type="button" id="f-cancel">Cancelar</button>
+      <button class="pri" id="f-save" type="submit">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const BOATS=["AH Giorgio P.","AH Liguria","AH Valletta","AH Varazze","Austral Abrolhos","CBO Alessandra","CBO Aliança","CBO Anita","CBO Arpoador","CBO Atlântico","CBO Bianca","CBO Bossa Nova","CBO Carolina","CBO Copacabana","CBO Endeavour","CBO Energy","CBO Flamengo","CBO Guanabara","CBO Iguaçu","CBO Ipanema","CBO Isabella","CBO Itajaí","CBO Manoella","CBO Oceana","CBO Pacífico","CBO Parintins","CBO Renata","CBO Supporter","CBO Terra Brasilis","CBO Wave","CBO Wiser","Fernando de Noronha","Ilha da Trindade","Ilha de Santana","Ilha de São Sebastião","Ilha do Cabo Frio","Ilha do Marajó","Ilha do Mosqueiro","Jim O'Brien","Macaé","Martin Vaz","Ocean Stalwart","Parcel das Feiticeiras","Parcel das Paredes","Parcel das Timbebas","Parcel de Manuel Luís","Parcel do Badejo","Parcel do Bandolim","Parcel dos Meros","Parcel dos Reis","Rochedo de São Paulo","Rochedo de São Pedro","Seward Johnson"];
+const TRANSP=["APOIO NORDESTE","BIG LOG","ELOIM","FWM","GOD EXPRESS","LRS","RIKER TRANSPORTES","SER LOG","SHJ COMERCIAL OFFSHORE","SILVA AMARAL"];
+const STAGES=["Em separação / Aguardando listagem de materiais para emissão de NF","Em processo de emissão de NF","NF emitida","Coleta realizada","Concluído / Entrega realizada"];
+const SHORT=["Separação / aguard. listagem","Emissão de NF","NF emitida","Coleta realizada","Concluído / Entrega realizada"];
+const COL=3, LAST=STAGES.length-1;
+const KEY="pss-painel-v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let items=store.get(KEY,[]), view=store.get(KEY+"-view",0), tab=store.get(KEY+"-tab","painel"), warnR=store.get(KEY+"-warny",1), tol=store.get(KEY+"-tol",1), editing=null, draftAt=[];
+// v2 inseriu a etapa "Coleta realizada" (índice 3): o antigo "Concluído" (3) passa a ser 4
+if(store.get(KEY+"-ver",1)<2){items.forEach(i=>{if(i.stage==3)i.stage=LAST});store.set(KEY,items);store.set(KEY+"-ver",2)}
+// v3: remove, uma única vez, os lançamentos fictícios que o antigo botão "Exemplo" gravou (id começa com "ex" + número, ou observação "EXEMPLO…")
+if(store.get(KEY+"-ver",1)<3){items=items.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));store.set(KEY,items);store.set(KEY+"-ver",3)}
+if(view>9||view<0)view=0;
+const save=()=>store.set(KEY,items);
+$("#boats").innerHTML=BOATS.map(b=>`<option value="${esc(b)}">`).join("");
+$("#f-stage").innerHTML=STAGES.map((s,i)=>`<option value="${i}">${s}</option>`).join("");
+$("#wh").value=warnR;
+$("#transps").innerHTML=TRANSP.map(b=>`<option value="${esc(b)}">`).join("");
+
+const pad=n=>String(n).padStart(2,"0");
+const toDate=s=>s?new Date(s):null;
+const fmt=s=>{if(!s)return"—";const d=new Date(s);return `${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const dur=ms=>{const m=Math.round(Math.abs(ms)/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return (d?d+"d ":"")+h+"h "+pad(m%60)+"min"};
+const fmtD=fmt;
+const ref=it=>it.coleta?new Date(it.coleta):null;
+function st(it){
+  if(it.stage==LAST)return{k:"d",label:"Concluído",diff:0};
+  if(it.stage==COL)return{k:"g",label:"Coleta realizada",diff:null};
+  const r=ref(it);
+  if(!r)return{k:"d",label:"Sem data de coleta",diff:null};
+  const ms=r-Date.now();
+  if(ms<0)return{k:"r",label:"Coleta atrasada "+dur(ms),diff:ms};
+  if(ms<warnR*36e5)return{k:"y",label:"Coleta em "+dur(ms),diff:ms};
+  return{k:"g",label:"Coleta em "+dur(ms),diff:ms};
+}
+const sorted=a=>[...a].sort((x,y)=>(ref(x)||1e15)-(ref(y)||1e15));
+const shown=()=>sorted(fitems());
+const pill=it=>{const s=st(it);return `<span class="pill ${s.k}">${s.label}</span>`};
+const reprog=it=>it.atrasos&&it.atrasos.length?`<div class="small" style="color:var(--r)">⏱ ${it.atrasos.length} reprogramação(ões) de atracação</div>`:"";
+const times=it=>`<div class="small mut">🚚 ${esc(it.transp)||"sem transportadora"}</div><div class="small mut">📍 ${esc(it.local)||"sem local de entrega"}</div><div class="small mut">Coleta: <b style="color:var(--tx)">${fmtD(it.coleta)}</b> · Atrac. prev.: ${fmt(it.prev)} · conf.: ${fmt(it.conf)}</div>${reprog(it)}`;
+const obs=it=>it.obs?`<div class="small mut" style="margin-top:4px">📝 ${esc(it.obs)}</div>`:"";
+const mini=it=>`<div class="card bl-${st(it).k}" data-id="${it.id}"><b>${esc(it.boat)}</b>${times(it)}<div style="margin-top:4px">${pill(it)}</div>${obs(it)}</div>`;
+
+const VIEWS=[
+["1 · Kanban por etapa",L=>`<div class="kan">${STAGES.map((s,i)=>`<div class="col"><h3>${SHORT[i]} (${L.filter(x=>x.stage==i).length})</h3>${L.filter(x=>x.stage==i).map(mini).join("")}</div>`).join("")}</div>`],
+["2 · Tabela operacional",L=>`<div style="overflow-x:auto"><table><tr><th>Barco</th><th>Transportadora</th><th>Local de entrega / Atracação</th><th>Coleta prevista</th><th>Atrac. prev.</th><th>Atrac. conf.</th><th>Etapa</th><th>Situação</th><th>Observação</th><th></th></tr>${L.map(it=>`<tr data-id="${it.id}"><td><b>${esc(it.boat)}</b></td><td>${esc(it.transp)}</td><td>${esc(it.local)}</td><td><b>${fmtD(it.coleta)}</b></td><td>${fmt(it.prev)}${it.atrasos&&it.atrasos.length?` <span class="pill r" title="Reprogramações">⏱${it.atrasos.length}</span>`:""}</td><td>${fmt(it.conf)}</td><td>${SHORT[it.stage]}</td><td>${pill(it)}</td><td>${esc(it.obs)}</td><td>${it.stage<LAST?`<button data-adv="${it.id}">Avançar ▸</button>`:""}</td></tr>`).join("")}</table></div>`],
+["3 · Cards com progresso",L=>`<div class="grid">${L.map(it=>`<div class="card bl-${st(it).k}" data-id="${it.id}"><div class="row"><b>${esc(it.boat)}</b><span class="sp"></span>${pill(it)}</div>${times(it)}<div class="small" style="margin-top:6px">${SHORT[it.stage]}</div><div class="bar"><i class="f-${st(it).k}" style="width:${(it.stage+1)/STAGES.length*100}%"></i></div>${obs(it)}</div>`).join("")}</div>`],
+["4 · Painel estilo aeroporto",L=>`<div class="board"><div class="br hd"><span>BARCO</span><span>TRANSPORTADORA</span><span>LOCAL / ATRACAÇÃO</span><span>COLETA</span><span>ATRAC. PREV.</span><span>ATRAC. CONF.</span><span>ETAPA</span><span>SITUAÇÃO</span></div>${L.map(it=>{const s=st(it);return `<div class="br c${s.k}" data-id="${it.id}"><span>${esc(it.boat).toUpperCase()}</span><span>${esc(it.transp).toUpperCase()}</span><span>${esc(it.local).toUpperCase()}</span><span>${fmtD(it.coleta)}</span><span>${fmt(it.prev)}</span><span>${fmt(it.conf)}</span><span>${SHORT[it.stage].toUpperCase()}</span><span>${s.label.toUpperCase()}</span></div>`}).join("")}</div>`],
+["5 · Linha do tempo",L=>{
+  const pts=L.flatMap(i=>[toDate(i.prev),toDate(i.conf)]).filter(Boolean).concat([new Date()]).map(Number);
+  if(pts.length<2)return"";
+  const a=Math.min(...pts)-2*36e5,b=Math.max(...pts)+2*36e5,p=t=>((t-a)/(b-a)*100).toFixed(2)+"%";
+  const ax=[0,.25,.5,.75,1].map(f=>`<span>${fmt(a+(b-a)*f)}</span>`).join("");
+  return `<div class="tl-ax">${ax}</div>`+L.map(it=>{const s=st(it),P=toDate(it.prev),C=toDate(it.conf);
+    const seg=P&&C?`<div class="tl-seg f-${s.k}" style="left:${p(Math.min(P,C))};width:calc(${p(Math.max(P,C))} - ${p(Math.min(P,C))})"></div>`:"";
+    return `<div class="tl-r" data-id="${it.id}" style="cursor:pointer"><div><b>${esc(it.boat)}</b><div class="small mut">${SHORT[it.stage]}</div></div><div class="tl-t">${seg}${P?`<div class="tl-m" style="left:${p(P)};color:var(--${s.k})" title="Previsto"></div>`:""}${C?`<div class="tl-m f" style="left:${p(C)};color:var(--${s.k})" title="Confirmado"></div>`:""}<div class="tl-now" style="left:${p(Date.now())}"></div></div></div>`}).join("")+`<div class="small mut">○ previsto · ● confirmado · linha vermelha = agora</div>`;}],
+["6 · Resumo gerencial (KPIs)",L=>{
+  const c={g:0,y:0,r:0,d:0};L.forEach(i=>c[st(i).k]++);
+  const crit=L.filter(i=>["r","y"].includes(st(i).k));
+  return `<div class="kpi"><div class="g"><b>${c.g}</b>no prazo / coletado</div><div class="y"><b>${c.y}</b>atenção</div><div class="r"><b>${c.r}</b>atrasado</div><div class="d"><b>${c.d}</b>concluído / s. data</div></div>
+  <h3>Por etapa</h3><div class="kpi">${STAGES.map((s,i)=>`<div class="d"><b>${L.filter(x=>x.stage==i).length}</b>${SHORT[i]}</div>`).join("")}</div>
+  <h3>Exigem ação agora</h3><div class="grid">${crit.map(mini).join("")||'<div class="empty">Nada crítico.</div>'}</div>`}],
+["7 · Agenda por dia",L=>{
+  const g={};L.forEach(i=>{const r=ref(i);const k=r?`Coleta ${pad(r.getDate())}/${pad(r.getMonth()+1)}`:"Sem data de coleta";(g[k]=g[k]||[]).push(i)});
+  return Object.entries(g).map(([k,a])=>`<h3 class="day">${k}</h3>`+a.map(it=>`<div class="ag" data-id="${it.id}"><b>${esc(it.transp)||"—"}</b><div><b>${esc(it.boat)}</b> <span class="mut small">· ${SHORT[it.stage]}</span>${obs(it)}</div>${pill(it)}</div>`).join("")).join("")}],
+["8 · Esteira por barco (etapas)",L=>L.map(it=>`<div class="sw" data-id="${it.id}"><div><b>${esc(it.boat)}</b><div class="small mut">🚚 ${esc(it.transp)||"—"}<br>Coleta: ${fmtD(it.coleta)}</div></div><div><div class="stp">${STAGES.map((_,i)=>`${i?'<em></em>':''}<span class="${i<it.stage?'dn':i==it.stage?(it.stage==LAST?'dn':'cu'):''}"></span>`).join("")}</div><div class="stl">${SHORT.map(s=>`<span>${s}</span>`).join("")}</div></div><div style="text-align:right">${pill(it)}</div></div>`).join("")],
+["9 · Contagem regressiva",L=>`<div class="grid">${L.filter(i=>i.stage<COL).map(it=>{const s=st(it);return `<div class="card bl-${s.k}" data-id="${it.id}"><b>${esc(it.boat)}</b><div class="cd-big" style="color:var(--${s.k})">${s.diff==null?"—":(s.diff<0?"−":"")+dur(s.diff)}</div><div class="small mut">coleta em ${fmtD(it.coleta)} · 🚚 ${esc(it.transp)||"—"}</div><div class="small" style="margin-top:4px">${SHORT[it.stage]}</div>${obs(it)}</div>`}).join("")}</div>`],
+["10 · Frota (53 barcos)",L=>{
+  const by={};L.forEach(i=>(by[i.boat]=by[i.boat]||[]).push(i));
+  const rank={r:3,y:2,g:1,d:0};
+  return `<div class="fleet">${BOATS.map(b=>{const a=(by[b]||[]).filter(i=>i.stage<LAST);const all=by[b]||[];
+    if(!all.length)return `<div class="tile"><b>${esc(b)}</b>sem lançamento</div>`;
+    const it=sorted(a.length?a:all).sort((x,y)=>rank[st(y).k]-rank[st(x).k])[0],s=st(it);
+    return `<div class="tile has ${s.k}" data-id="${it.id}" style="border-color:var(--${s.k})"><b>${esc(b)}</b>${SHORT[it.stage]}<br>${it.stage>=COL?"":s.k=="d"?"sem data":"coleta "+fmt(it.coleta)}</div>`}).join("")}</div>`}]
+];
+
+/* ---------- Análise de dados de entrega ---------- */
+const normM=s=>(s||"").trim().replace(/\s+/g," ");
+const events=(L=items)=>L.flatMap(it=>(it.atrasos||[]).map(a=>({...a,iid:it.id,boat:it.boat,ms:new Date(a.para)-new Date(a.de)})));
+function rankBy(ev,keyFn,otherFn){
+  const m=new Map();
+  ev.forEach(e=>{
+    const raw=normM(keyFn(e))||"(sem motivo)",k=raw.toLowerCase();
+    let o=m.get(k);if(!o){o={nome:raw,n:0,ms:0,max:0,oth:new Map()};m.set(k,o)}
+    o.n++;o.ms+=e.ms;o.max=Math.max(o.max,e.ms);
+    const x=normM(otherFn(e))||"(sem motivo)";o.oth.set(x,(o.oth.get(x)||0)+1);
+  });
+  return [...m.values()].sort((a,b)=>b.n-a.n||b.ms-a.ms);
+}
+function rankTable(rows,otherLabel){
+  const mx=Math.max(...rows.map(r=>r.n));
+  return `<div style="overflow-x:auto"><table><tr><th>#</th><th>Nome</th><th>Atrasos</th><th>Atraso total</th><th>Média</th><th>Maior</th><th>${otherLabel}</th></tr>${rows.map((r,i)=>{
+    const top=[...r.oth.entries()].sort((a,b)=>b[1]-a[1]);
+    return `<tr><td>${i+1}</td><td><b>${esc(r.nome)}</b><div class="bar"><i class="f-r" style="width:${r.n/mx*100}%"></i></div></td><td><b>${r.n}</b></td><td>${dur(r.ms)}</td><td>${dur(r.ms/r.n)}</td><td>${dur(r.max)}</td><td class="small">${top.slice(0,3).map(([k,v])=>`${esc(k)} (${v})`).join("<br>")}</td></tr>`}).join("")}</table></div>`;
+}
+/* Performance de entrega: compara o horário REAL da entrega com a atracação prevista ORIGINAL (a primeira informada pelo barco) */
+const orig=it=>(it.atrasos&&it.atrasos.length?it.atrasos[0].de:it.prev)||"";
+const nowLocal=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const pct=(x,n)=>n?Math.round(x/n*100)+"%":"—";
+const sgn=ms=>(ms<0?"−":"+")+dur(ms);
+function perfHtml(L){
+  const tolMs=tol*36e5;
+  const M=L.filter(i=>i.stage==LAST&&i.real&&orig(i)).map(i=>{const o=new Date(orig(i)),r=new Date(i.real),dev=r-o;return{it:i,o,r,dev,dia:o.toDateString()==r.toDateString(),hor:dev<=tolMs}});
+  const nao=L.filter(i=>i.stage==LAST&&!(i.real&&orig(i)));
+  const ctl=`<div class="row small" style="margin-bottom:8px">Tolerância para “eficiência horas”: <input id="tol" type="number" min="0" step="0.5" value="${tol}" style="width:70px"> h após o horário previsto original</div>`;
+  const aviso=nao.length?`<div class="small mut" style="margin:6px 0">⚠ ${nao.length} entrega(s) concluída(s) ainda não medida(s) — clique para completar o que falta:</div><div style="overflow-x:auto"><table><tr><th>Barco</th><th>Falta</th></tr>${nao.map(i=>`<tr data-id="${i.id}"><td><b>${esc(i.boat)}</b></td><td>${[!orig(i)&&"horário previsto de atracação",!i.real&&"horário real da entrega"].filter(Boolean).join(" e ")}</td></tr>`).join("")}</table></div>`:"";
+  const head=`<h3 style="margin-top:0">🎯 Performance de entrega</h3>`+ctl;
+  if(!M.length)return head+`<div class="empty">Sem entregas medidas ainda. Assim que um lançamento for para “Concluído / Entrega realizada”, ele entra aqui e as eficiências são calculadas.</div>`+aviso;
+  const n=M.length,nd=M.filter(x=>x.dia).length,nh=M.filter(x=>x.hor).length,avg=M.reduce((s,x)=>s+x.dev,0)/n;
+  const grp=keyFn=>{const g=new Map();M.forEach(x=>{const k=normM(keyFn(x.it))||"(não informado)";let o=g.get(k);if(!o){o={nome:k,n:0,dia:0,hor:0,dev:0};g.set(k,o)}o.n++;o.dia+=x.dia;o.hor+=x.hor;o.dev+=x.dev});return [...g.values()].sort((a,b)=>b.hor/b.n-a.hor/a.n||b.dia/b.n-a.dia/a.n||b.n-a.n)};
+  const tbl=(rows,lab)=>`<div style="overflow-x:auto"><table><tr><th>${lab}</th><th>Entregas</th><th>Eficiência no dia</th><th>Eficiência horas</th><th>Desvio médio</th></tr>${rows.map(r=>`<tr><td><b>${esc(r.nome)}</b></td><td>${r.n}</td><td><b>${pct(r.dia,r.n)}</b> <span class="small mut">(${r.dia}/${r.n})</span></td><td><b>${pct(r.hor,r.n)}</b> <span class="small mut">(${r.hor}/${r.n})</span></td><td>${sgn(r.dev/r.n)}</td></tr>`).join("")}</table></div>`;
+  const log=[...M].sort((a,b)=>b.r-a.r);
+  return head+`<div class="kpi"><div class="g"><b>${pct(nd,n)}</b>eficiência de entrega no dia<div class="small">${nd} de ${n}</div></div><div class="g"><b>${pct(nh,n)}</b>eficiência de entrega horas<div class="small">${nh} de ${n} (≤ ${tol} h)</div></div><div class="d"><b class="sm">${sgn(avg)}</b>desvio médio vs. previsto</div><div class="d"><b>${n}</b>entregas medidas<div class="small">de ${n+nao.length} concluídas</div></div></div>${aviso}
+  <div class="an2"><div><h3 style="margin-top:0">Por barco</h3>${tbl(grp(i=>i.boat),"Barco")}</div><div><h3 style="margin-top:0">Por transportadora</h3>${tbl(grp(i=>i.transp),"Transportadora")}</div></div>
+  <h3>Entregas medidas</h3><div style="overflow-x:auto"><table><tr><th>Barco</th><th>Previsto original</th><th>Real</th><th>Desvio</th><th>No dia?</th><th>Em horas?</th></tr>${log.map(x=>`<tr data-id="${x.it.id}"><td><b>${esc(x.it.boat)}</b></td><td>${fmt(x.o)}</td><td>${fmt(x.r)}</td><td>${sgn(x.dev)}</td><td><span class="pill ${x.dia?"g":"r"}">${x.dia?"sim":"não"}</span></td><td><span class="pill ${x.hor?"g":"r"}">${x.hor?"sim":"não"}</span></td></tr>`).join("")}</table></div>
+  <div class="small mut" style="margin-top:8px">No dia = entrega no mesmo dia do horário previsto original. Horas = entrega até a tolerância após o previsto original (adiantada conta como eficiente). Ordenado pela eficiência horas.</div>`;
+}
+/* ---- Painel de filtros (seleção múltipla, estilo Power BI). Conjunto vazio = "Todos". Os filtros se combinam (E). ---- */
+const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const BLANK="__blank";
+const FIELDS={
+  coleta:{t:"Data da coleta prevista",kind:"date",get:i=>i.coleta},
+  nf:{t:"Data da emissão da NF",kind:"date",get:i=>i.nfEm},
+  colr:{t:"Data de coleta realizada",kind:"date",get:i=>i.coletaReal},
+  ent:{t:"Data de entrega",kind:"date",get:i=>i.real},
+  boat:{t:"Embarcação",kind:"list",get:i=>i.boat},
+  transp:{t:"Transportadora",kind:"list",get:i=>i.transp||""},
+  etapa:{t:"Etapa",kind:"list",get:i=>String(i.stage)}
+};
+const SEL=(()=>{const s=store.get(KEY+"-F2",{}),o={};for(const k in FIELDS)o[k]=new Set(s[k]||[]);return o})();
+const saveSel=()=>{const o={};for(const k in SEL)o[k]=[...SEL[k]];store.set(KEY+"-F2",o)};
+let openF=null,CMP=store.get(KEY+"-cmp","coleta");
+const EXP=new Set(),FQ={}; // EXP: anos recolhidos e meses expandidos
+const fval=(k,it)=>{const F=FIELDS[k],v=F.get(it);return F.kind=="date"?(v?String(v).slice(0,10):""):(v==null?"":String(v))};
+const vkey=v=>v===""?BLANK:v;
+const fitems=()=>items.filter(it=>Object.keys(FIELDS).every(k=>!SEL[k].size||SEL[k].has(vkey(fval(k,it)))));
+function avail(k){
+  const u=[...new Set(items.map(it=>vkey(fval(k,it))))];
+  return u.sort((a,b)=>a===BLANK?1:b===BLANK?-1:k=="etapa"?a-b:a.localeCompare(b,"pt-BR"));
+}
+const flab=(k,v)=>v===BLANK?"(Em branco)":k=="etapa"?SHORT[v]:FIELDS[k].kind=="date"?v.split("-").reverse().join("/"):v;
+function leaves(k,pref){return pref===BLANK?[BLANK]:FIELDS[k].kind=="date"?avail(k).filter(v=>v!==BLANK&&v.startsWith(pref)):[pref]}
+function toggleSel(k,pref){
+  const S=SEL[k];if(pref=="*"){S.clear();return}
+  const L=leaves(k,pref),all=L.every(v=>S.has(v));
+  L.forEach(v=>all?S.delete(v):S.add(v));
+}
+function ddBody(k){
+  const S=SEL[k],av=avail(k),F=FIELDS[k];
+  const clr=`<div class="ti" data-clr="${k}" style="${S.size?"":"font-weight:600"}">${S.size?"✕ Limpar seleção (Todos)":"✓ Todos"}</div>`;
+  const cb=(pref,label)=>{const L=leaves(k,pref),n=L.filter(v=>S.has(v)).length;return `<label><input type="checkbox" data-f="${k}" data-k="${esc(pref)}"${n&&n==L.length?" checked":""}${n&&n<L.length?" data-ind='1'":""}> ${esc(label)}</label>`};
+  if(F.kind=="list"){
+    const q=(FQ[k]||"").toLowerCase();
+    return `<input id="fs-${k}" data-fs="${k}" placeholder="Pesquisar…" value="${esc(FQ[k]||"")}" style="width:100%;margin-bottom:4px">`+clr+av.filter(v=>!q||flab(k,v).toLowerCase().includes(q)).map(v=>`<label class="ti"><input type="checkbox" data-f="${k}" data-k="${esc(v)}"${S.has(v)?" checked":""}> ${esc(flab(k,v))}</label>`).join("");
+  }
+  const days=av.filter(v=>v!==BLANK),years=[...new Set(days.map(d=>d.slice(0,4)))];
+  let h=clr;
+  years.forEach(y=>{
+    const yk=`${k}|${y}`,yo=!EXP.has(yk),ms=[...new Set(days.filter(d=>d.startsWith(y)).map(d=>d.slice(0,7)))];
+    h+=`<div class="tn"><span class="tg" data-exp="${yk}">${yo?"▾":"▸"}</span>${cb(y,y)}</div>`;
+    if(yo)ms.forEach(m=>{
+      const mk=`${k}|${m}`,mo=EXP.has(mk),ds=days.filter(d=>d.startsWith(m));
+      h+=`<div class="tn" style="padding-left:16px"><span class="tg" data-exp="${mk}">${mo?"▾":"▸"}</span>${cb(m,MESES[+m.slice(5)-1])}</div>`;
+      if(mo)ds.forEach(d=>{h+=`<div class="tn" style="padding-left:34px"><span class="tg"></span>${cb(d,d.slice(8)+"/"+d.slice(5,7))}</div>`});
+    });
+  });
+  if(av.includes(BLANK))h+=`<div class="tn"><span class="tg"></span>${cb(BLANK,"(Em branco)")}</div>`;
+  return h||clr;
+}
+/* Comparativo entre os meses selecionados */
+function metrics(G){
+  const tolMs=tol*36e5,M=G.filter(i=>i.stage==LAST&&i.real&&orig(i)).map(i=>{const o=new Date(orig(i)),r=new Date(i.real),dev=r-o;return{dev,dia:o.toDateString()==r.toDateString(),hor:dev<=tolMs}}),ev=events(G),n=M.length;
+  return{l:G.length,c:G.filter(i=>i.stage==LAST).length,n,dia:n?M.filter(x=>x.dia).length/n:null,hor:n?M.filter(x=>x.hor).length/n:null,dev:n?M.reduce((s,x)=>s+x.dev,0)/n:null,at:ev.length,atm:ev.length?ev.reduce((s,e)=>s+e.ms,0)/ev.length:null};
+}
+function cmpHtml(L){
+  const g=new Map();
+  L.forEach(it=>{const v=fval(CMP,it),k=v?v.slice(0,7):"";if(!g.has(k))g.set(k,[]);g.get(k).push(it)});
+  const keys=[...g.keys()].sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b)),mt=new Map(keys.map(k=>[k,metrics(g.get(k))]));
+  const mlab=k=>k?MESES[+k.slice(5)-1].replace(/^./,c=>c.toUpperCase())+" de "+k.slice(0,4):"Sem data";
+  const cnt=v=>v==null?"—":String(v),p=v=>v==null?"—":Math.round(v*100)+"%",sd=d=>(d>0?"+":d<0?"−":"")+Math.abs(d);
+  const R=[["Lançamentos",m=>m.l,cnt,d=>sd(d)],["Concluídos (entrega realizada)",m=>m.c,cnt,d=>sd(d)],["Entregas medidas",m=>m.n,cnt,d=>sd(d)],
+    ["Eficiência de entrega no dia",m=>m.dia,p,d=>sd(Math.round(d*100))+" p.p.",1],["Eficiência de entrega horas",m=>m.hor,p,d=>sd(Math.round(d*100))+" p.p.",1],
+    ["Desvio médio vs. previsto",m=>m.dev,v=>v==null?"—":sgn(v),d=>sgn(d)],["Atrasos de atracação",m=>m.at,cnt,d=>sd(d)],["Atraso médio",m=>m.atm,v=>v==null?"—":dur(v),d=>sgn(d)]];
+  const real=keys.filter(k=>k),two=real.length>=2,a=real[real.length-2],b=real[real.length-1];
+  return `<h3 style="margin-top:0">📊 Comparativo por mês</h3>
+  <div class="row small" style="margin-bottom:8px">Agrupar os meses pela <select id="fcmp">${["coleta","nf","colr","ent"].map(k=>`<option value="${k}"${CMP==k?" selected":""}>${FIELDS[k].t}</option>`).join("")}</select> <span class="mut">(vale para os lançamentos já filtrados acima)</span></div>
+  `+(keys.length?`<div style="overflow-x:auto"><table><tr><th>Indicador</th>${keys.map(k=>`<th>${mlab(k)}</th>`).join("")}${two?`<th>Variação<br><span class="small">${mlab(b)} vs ${mlab(a)}</span></th>`:""}</tr>${R.map(([t,f,fm,fd,bar])=>`<tr><td><b>${t}</b></td>${keys.map(k=>{const v=f(mt.get(k));return `<td>${fm(v)}${bar&&v!=null?`<div class="bar"><i class="f-g" style="width:${v*100}%"></i></div>`:""}</td>`}).join("")}${two?(()=>{const x=f(mt.get(a)),y=f(mt.get(b));return `<td>${x==null||y==null?"—":fd(y-x)}</td>`})():""}</tr>`).join("")}</table></div>`:`<div class="empty">Nenhum lançamento no filtro.</div>`);
+}
+/* Painel lateral de filtros (gaveta à direita, aberta pelo botão "Filtro"); vale para as duas abas */
+let drawerOpen=false;
+const sumText=k=>{
+  const S=SEL[k];if(!S.size)return "Todos";if(S.size==1)return flab(k,[...S][0]);
+  if(FIELDS[k].kind=="date"){const ms=[...new Set([...S].filter(v=>v!==BLANK).map(v=>v.slice(0,7)))].sort();return (ms.length<=3?ms.map(m=>MESES[+m.slice(5)-1].slice(0,3)+"/"+m.slice(2,4)).join(", "):ms.length+" meses")+(S.has(BLANK)?" + vazios":"")}
+  return `${S.size} selecionados`;
+};
+const nAtivos=()=>Object.keys(FIELDS).filter(k=>SEL[k].size).length;
+function drawerHtml(){
+  return `<div class="dh"><b>Painel de Filtros</b><span class="small mut">${fitems().length} de ${items.length} lançamentos</span><a class="lim" data-fclear>Limpar</a><a class="fec" data-fclose>Fechar</a></div>
+  <div class="dbody"><div class="fp">${Object.keys(FIELDS).map(k=>`<div class="dd"><div class="ddt">${FIELDS[k].t}</div><button class="ddb" data-open="${k}"><span>${esc(sumText(k))}</span><span>${openF==k?"▴":"▾"}</span></button>${openF==k?`<div class="ddp">${ddBody(k)}</div>`:""}</div>`).join("")}</div>
+  <div class="small mut" style="margin-top:16px">Marque mais de um mês (ou dia) para comparar na aba de análise. Os filtros se combinam; sem seleção = Todos. Valem para o Painel e para a análise.</div></div>`;
+}
+function renderDrawer(){
+  const dr=$("#drawer");dr.classList.toggle("open",drawerOpen);
+  if(!drawerOpen)return;
+  const fa=document.activeElement,fid=fa&&fa.id&&fa.id.startsWith("fs-")?fa.id:null,fpos=fid?fa.selectionStart:0,sb=dr.querySelector(".dbody")?.scrollTop||0,sp=dr.querySelector(".ddp")?.scrollTop||0;
+  dr.innerHTML=drawerHtml();
+  dr.querySelectorAll("input[data-ind]").forEach(x=>x.indeterminate=true);
+  const b=dr.querySelector(".dbody");if(b)b.scrollTop=sb;
+  const pp=dr.querySelector(".ddp");if(pp)pp.scrollTop=sp;
+  if(fid){const x=$("#"+fid);if(x){x.focus();x.setSelectionRange(fpos,fpos)}}
+}
+function renderFbar(){
+  const ks=Object.keys(FIELDS).filter(k=>SEL[k].size);
+  $("#fbar").innerHTML=ks.length?`<b>Filtros ativos:</b> ${ks.map(k=>`${FIELDS[k].t}: <b>${esc(sumText(k))}</b>`).join(" · ")} — ${fitems().length} de ${items.length} lançamentos <a class="lim" data-fclear style="cursor:pointer">Limpar</a>`:"";
+  $("#fbtn").innerHTML="🔍 Filtro"+(ks.length?` <span class="pill r">${ks.length}</span>`:"");
+}
+function analise(){const L=fitems();const hr=`<hr style="margin:26px 0;border:0;border-top:1px solid var(--bd)">`;return perfHtml(L)+hr+`<h3 style="margin-top:0">⏱ Atrasos de atracação</h3>`+atrasosHtml(L)+hr+cmpHtml(L)}
+function atrasosHtml(L){
+  const ev=events(L);
+  if(!ev.length)return `<div class="empty"><b>Nenhum atraso registrado ainda.</b><br>Quando um barco avisar um horário de atracação e não atracar, abra o lançamento, preencha “Atraso / reprogramação da atracação” (novo horário + motivo) e salve. Cada registro entra aqui.</div>`;
+  const total=ev.reduce((s,e)=>s+e.ms,0),maxE=ev.reduce((a,b)=>b.ms>a.ms?b:a);
+  const byBoat=rankBy(ev,e=>e.boat,e=>e.motivo),byMot=rankBy(ev,e=>e.motivo,e=>e.boat);
+  const log=[...ev].sort((a,b)=>(b.em||"").localeCompare(a.em||""));
+  return `<div class="kpi"><div class="r"><b>${ev.length}</b>atrasos registrados</div><div class="d"><b>${byBoat.length}</b>barcos afetados</div><div class="d"><b class="sm">${dur(total/ev.length)}</b>atraso médio</div><div class="d"><b class="sm">${dur(maxE.ms)}</b>maior atraso (${esc(maxE.boat)})</div><div class="d"><b class="sm">${esc(byMot[0].nome)}</b>motivo mais frequente</div></div>
+  <div class="an2"><div><h3 style="margin-top:0">🏆 Ranking de atrasos por barco</h3>${rankTable(byBoat,"Motivos mais frequentes")}</div>
+  <div><h3 style="margin-top:0">🏆 Ranking por motivo</h3>${rankTable(byMot,"Barcos mais afetados")}</div></div>
+  <h3>Todos os atrasos (dia e hora)</h3>
+  <div style="overflow-x:auto"><table><tr><th>Barco</th><th>Atracação prevista antes</th><th>Nova previsão</th><th>Atraso</th><th>Motivo</th><th>Registrado em</th></tr>${log.map(e=>`<tr data-id="${e.iid}"><td><b>${esc(e.boat)}</b></td><td>${fmt(e.de)}</td><td>${fmt(e.para)}</td><td><span class="pill r">+${dur(e.ms)}</span></td><td>${esc(e.motivo)||"<span class='mut'>(sem motivo)</span>"}</td><td class="small mut">${fmt(e.em)}</td></tr>`).join("")}</table></div>
+  <div class="small mut" style="margin-top:8px">Ranking ordenado por número de atrasos (desempate: atraso total). Clique numa linha do log para abrir o lançamento.</div>`;
+}
+
+function render(){
+  $("#tabs").innerHTML=`<button class="${tab=="painel"?"on":""}" data-tab="painel">📋 Painel</button><button class="${tab=="analise"?"on":""}" data-tab="analise">📊 Análise de dados de entrega</button>`;
+  const p=tab=="painel";
+  $("#views").style.display=$("#pfilters").style.display=$("#legend").style.display=p?"":"none";
+  renderFbar();renderDrawer();
+  if(!p){$("#app").innerHTML=analise();return}
+  $("#views").innerHTML=VIEWS.map((v,i)=>`<button class="${i==view?"on":""}" data-v="${i}">${v[0]}</button>`).join("");
+  const L=shown(),out=VIEWS[view][1](L);
+  $("#app").innerHTML=(view==9||L.length)?out:'<div class="empty">Nenhum lançamento. Clique em “+ Novo lançamento”.</div>';
+}
+function renderHist(){
+  $("#hist").innerHTML=draftAt.length?`<div class="small mut" style="margin-top:10px"><b>Atrasos já registrados neste lançamento</b></div>`+draftAt.map(a=>`<div><span style="flex:1">${fmt(a.de)} → <b>${fmt(a.para)}</b> <span class="pill r">+${dur(new Date(a.para)-new Date(a.de))}</span><br>${esc(a.motivo)}</span><button type="button" data-delat="${a.id}" title="Remover este registro">✕</button></div>`).join(""):"";
+}
+function openForm(id){
+  editing=id?items.find(i=>i.id==id):null;
+  $("#dt").textContent=editing?"Editar lançamento":"Novo lançamento";
+  $("#f-boat").value=editing?.boat||"";$("#f-transp").value=editing?.transp||"";$("#f-local").value=editing?.local||"";$("#f-coleta").value=editing?.coleta||"";$("#f-prev").value=editing?.prev||"";$("#f-conf").value=editing?.conf||"";$("#f-real").value=editing?.real||"";$("#f-nf").value=editing?.nfEm||"";$("#f-colr").value=editing?.coletaReal||"";
+  $("#f-stage").value=editing?.stage??0;$("#f-obs").value=editing?.obs||"";
+  $("#f-novo").value="";$("#f-motivo").value="";
+  draftAt=[...(editing?.atrasos||[])];renderHist();
+  $("#motivos").innerHTML=[...new Set(events().map(e=>normM(e.motivo)).filter(Boolean))].map(m=>`<option value="${esc(m)}">`).join("");
+  $("#f-del").style.display=editing?"":"none";
+  $("#dlg").showModal();
+}
+$("#frm").addEventListener("submit",e=>{
+  const boat=$("#f-boat").value.trim();if(!boat){e.preventDefault();return}
+  let prev=$("#f-prev").value;
+  const novo=$("#f-novo").value,motivo=normM($("#f-motivo").value);
+  if(novo||motivo){
+    const err=!novo||!motivo?"Para registrar o atraso, informe o novo horário previsto e o motivo.":!prev?"Informe o horário previsto de atracação atual antes de registrar o atraso.":new Date(novo)<=new Date(prev)?"O novo horário precisa ser posterior ao horário previsto atual.":"";
+    if(err){e.preventDefault();alert(err);return}
+    draftAt.push({id:Date.now()+Math.random().toString(36).slice(2,6),de:prev,para:novo,motivo,em:new Date().toISOString().slice(0,16)});
+    prev=novo;
+  }
+  stampForm();
+  const o={boat,transp:$("#f-transp").value.trim(),local:$("#f-local").value.trim(),coleta:$("#f-coleta").value,prev,conf:$("#f-conf").value,real:$("#f-real").value,nfEm:$("#f-nf").value,coletaReal:$("#f-colr").value,stage:+$("#f-stage").value,obs:$("#f-obs").value.trim(),atrasos:draftAt};
+  if(editing)Object.assign(editing,o);else items.push({id:Date.now()+Math.random().toString(36).slice(2,6),...o});
+  save();render();
+});
+$("#f-cancel").onclick=()=>$("#dlg").close();
+$("#f-del").onclick=()=>{if(editing&&confirm("Excluir este lançamento (e os atrasos registrados nele)?")){items=items.filter(i=>i!==editing);save();$("#dlg").close();render()}};
+$("#novo").onclick=()=>openForm();
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab]");if(t){tab=t.dataset.tab;store.set(KEY+"-tab",tab);render();return}
+  const v=e.target.closest("[data-v]");if(v){view=+v.dataset.v;store.set(KEY+"-view",view);render();return}
+  if(e.target.closest("[data-fopen]")){drawerOpen=!drawerOpen;render();return}
+  if(e.target.closest("[data-fclose]")){drawerOpen=false;render();return}
+  if(openF&&!e.target.closest(".dd")){openF=null;render()}
+  if(e.target.closest("[data-fclear]")){for(const k in SEL)SEL[k].clear();saveSel();render();return}
+  const op=e.target.closest("[data-open]");if(op){openF=openF==op.dataset.open?null:op.dataset.open;render();return}
+  const ex=e.target.closest("[data-exp]");if(ex){const k=ex.dataset.exp;EXP.has(k)?EXP.delete(k):EXP.add(k);render();return}
+  const cl=e.target.closest("[data-clr]");if(cl){SEL[cl.dataset.clr].clear();saveSel();render();return}
+  const dl=e.target.closest("[data-delat]");if(dl){draftAt=draftAt.filter(a=>a.id!=dl.dataset.delat);renderHist();return}
+  const a=e.target.closest("[data-adv]");if(a){const it=items.find(i=>i.id==a.dataset.adv);if(it&&it.stage<LAST){it.stage++;{const f={2:"nfEm",3:"coletaReal",4:"real"}[it.stage];if(f&&!it[f])it[f]=nowLocal()}save();render()}return}
+  if(e.target.closest("dialog"))return;
+  const c=e.target.closest("[data-id]");if(c)openForm(c.dataset.id);
+});
+// ao mudar de etapa, registra o momento da etapa (NF emitida, coleta realizada, entrega); o campo continua editável
+const STAMP={2:"#f-nf",3:"#f-colr",4:"#f-real"};
+const stampForm=()=>{const s=STAMP[+$("#f-stage").value];if(s&&!$(s).value)$(s).value=nowLocal()};
+$("#f-stage").onchange=stampForm;
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.fs){FQ[e.target.dataset.fs]=e.target.value;render()}});
+document.addEventListener("change",e=>{
+  const id=e.target.id,v=e.target.value;
+  if(e.target.dataset&&e.target.dataset.f){toggleSel(e.target.dataset.f,e.target.dataset.k);saveSel();render();return}
+  if(id=="fcmp"){CMP=v;store.set(KEY+"-cmp",CMP);render();return}
+  if(e.target.id=="tol"){tol=Math.max(0,+e.target.value||0);store.set(KEY+"-tol",tol);render()}});
+$("#wh").onchange=e=>{warnR=Math.max(0,+e.target.value||0);store.set(KEY+"-warny",warnR);render()};
+$("#lim").onclick=()=>{if(items.length&&confirm("Apagar todos os lançamentos?")){items=[];save();render()}};
+$("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({versao:2,exportadoEm:new Date().toISOString(),itens:items},null,1)],{type:"application/json"}));a.download="painel-pss-"+new Date().toISOString().slice(0,10)+".json";a.click()};
+$("#imp").onclick=()=>$("#file").click();
+$("#file").onchange=async e=>{
+  try{
+    const d=JSON.parse(await e.target.files[0].text());
+    const legacy=Array.isArray(d),list=legacy?d:d.itens;
+    if(!Array.isArray(list))throw 0;
+    if(confirm("Substituir os lançamentos atuais pelos do arquivo?")){
+      items=list.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));
+      if(legacy)items.forEach(i=>{if(i.stage==3)i.stage=LAST}); // arquivo da versão anterior (sem a etapa Coleta realizada)
+      save();render();
+    }
+  }catch(x){alert("Arquivo inválido.")}
+  e.target.value="";
+};
+setInterval(()=>{if(!$("#dlg").open)render()},60000);
+render();
+</script>
+</body>
+</html>
