@@ -666,6 +666,16 @@ if(CLOUD){gate(true);cloudStart()}
   }
   if(location.hash==="#tv")setTimeout(open_,1200);
 })();
+/* Logo OceanPact no Modo TV */
+(function(){
+  const s=document.createElement("style");
+  s.textContent='#tvw .wt{position:relative}#tvw .wt img.tvlogo{position:absolute;left:4px;top:0;height:72px;width:auto}';
+  document.head.appendChild(s);
+  const box=document.getElementById("tvw"); if(!box)return;
+  const put=()=>{const w=box.querySelector(".wt"); if(w&&!w.querySelector("img.tvlogo")){const i=document.createElement("img");i.className="tvlogo";i.alt="OceanPact";i.src="LOGO%20Oceanpact.png";i.onerror=()=>i.remove();w.prepend(i)}};
+  new MutationObserver(put).observe(box,{childList:true});
+  put();
+})();
 </script>
 </body>
 </html>
