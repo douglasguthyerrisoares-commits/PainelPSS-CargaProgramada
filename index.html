@@ -206,7 +206,7 @@ let items=store.get(KEY,[]), view=store.get(KEY+"-view",0), tab=store.get(KEY+"-
 if(store.get(KEY+"-ver",1)<2){items.forEach(i=>{if(i.stage==3)i.stage=LAST});store.set(KEY,items);store.set(KEY+"-ver",2)}
 // v3: remove, uma única vez, os lançamentos fictícios que o antigo botão "Exemplo" gravou (id começa com "ex" + número, ou observação "EXEMPLO…")
 if(store.get(KEY+"-ver",1)<3){items=items.filter(i=>!(/^ex\d/.test(String(i.id))||/^EXEMPLO/.test(i.obs||"")));store.set(KEY,items);store.set(KEY+"-ver",3)}
-if(view>9||view<0)view=0;
+if(view>5||view<0)view=0;
 const CLOUD=!!(SB_URL&&SB_KEY);
 const ADMIN="douglas.soares@oceanpact.com"; // só este login vê e usa o Importar
 const isAdmin=()=>!!me&&me.toLowerCase()===ADMIN;
@@ -244,29 +244,16 @@ const mini=it=>`<div class="card bl-${st(it).k}" data-id="${it.id}"><b>${esc(it.
 
 const VIEWS=[
 ["1 · Kanban por etapa",L=>`<div class="kan">${STAGES.map((s,i)=>`<div class="col"><h3>${SHORT[i]} (${L.filter(x=>x.stage==i).length})</h3>${L.filter(x=>x.stage==i).map(mini).join("")}</div>`).join("")}</div>`],
-["2 · Tabela operacional",L=>`<div style="overflow-x:auto"><table><tr><th>Barco</th><th>Transportadora</th><th>Local de entrega / Atracação</th><th>Coleta prevista</th><th>Atrac. prev.</th><th>Atrac. conf.</th><th>Etapa</th><th>Situação</th><th>Observação</th><th></th></tr>${L.map(it=>`<tr data-id="${it.id}"><td><b>${esc(it.boat)}</b></td><td>${esc(it.transp)}</td><td>${esc(it.local)}</td><td><b>${fmtD(it.coleta)}</b></td><td>${fmt(it.prev)}${it.atrasos&&it.atrasos.length?` <span class="pill r" title="Reprogramações">⏱${it.atrasos.length}</span>`:""}</td><td>${fmt(it.conf)}</td><td>${SHORT[it.stage]}</td><td>${pill(it)}</td><td>${esc(it.obs)}</td><td>${it.stage<LAST?`<button data-adv="${it.id}">Avançar ▸</button>`:""}</td></tr>`).join("")}</table></div>`],
-["3 · Cards com progresso",L=>`<div class="grid">${L.map(it=>`<div class="card bl-${st(it).k}" data-id="${it.id}"><div class="row"><b>${esc(it.boat)}</b><span class="sp"></span>${pill(it)}</div>${times(it)}<div class="small" style="margin-top:6px">${SHORT[it.stage]}</div><div class="bar"><i class="f-${st(it).k}" style="width:${(it.stage+1)/STAGES.length*100}%"></i></div>${obs(it)}</div>`).join("")}</div>`],
-["4 · Painel estilo aeroporto",L=>`<div class="board"><div class="br hd"><span>BARCO</span><span>TRANSPORTADORA</span><span>LOCAL / ATRACAÇÃO</span><span>COLETA</span><span>ATRAC. PREV.</span><span>ATRAC. CONF.</span><span>ETAPA</span><span>SITUAÇÃO</span></div>${L.map(it=>{const s=st(it);return `<div class="br c${s.k}" data-id="${it.id}"><span>${esc(it.boat).toUpperCase()}</span><span>${esc(it.transp).toUpperCase()}</span><span>${esc(it.local).toUpperCase()}</span><span>${fmtD(it.coleta)}</span><span>${fmt(it.prev)}</span><span>${fmt(it.conf)}</span><span>${SHORT[it.stage].toUpperCase()}</span><span>${s.label.toUpperCase()}</span></div>`}).join("")}</div>`],
-["5 · Linha do tempo",L=>{
-  const pts=L.flatMap(i=>[toDate(i.prev),toDate(i.conf)]).filter(Boolean).concat([new Date()]).map(Number);
-  if(pts.length<2)return"";
-  const a=Math.min(...pts)-2*36e5,b=Math.max(...pts)+2*36e5,p=t=>((t-a)/(b-a)*100).toFixed(2)+"%";
-  const ax=[0,.25,.5,.75,1].map(f=>`<span>${fmt(a+(b-a)*f)}</span>`).join("");
-  return `<div class="tl-ax">${ax}</div>`+L.map(it=>{const s=st(it),P=toDate(it.prev),C=toDate(it.conf);
-    const seg=P&&C?`<div class="tl-seg f-${s.k}" style="left:${p(Math.min(P,C))};width:calc(${p(Math.max(P,C))} - ${p(Math.min(P,C))})"></div>`:"";
-    return `<div class="tl-r" data-id="${it.id}" style="cursor:pointer"><div><b>${esc(it.boat)}</b><div class="small mut">${SHORT[it.stage]}</div></div><div class="tl-t">${seg}${P?`<div class="tl-m" style="left:${p(P)};color:var(--${s.k})" title="Previsto"></div>`:""}${C?`<div class="tl-m f" style="left:${p(C)};color:var(--${s.k})" title="Confirmado"></div>`:""}<div class="tl-now" style="left:${p(Date.now())}"></div></div></div>`}).join("")+`<div class="small mut">○ previsto · ● confirmado · linha vermelha = agora</div>`;}],
-["6 · Resumo gerencial (KPIs)",L=>{
+["2 · Cards com progresso",L=>`<div class="grid">${L.map(it=>`<div class="card bl-${st(it).k}" data-id="${it.id}"><div class="row"><b>${esc(it.boat)}</b><span class="sp"></span>${pill(it)}</div>${times(it)}<div class="small" style="margin-top:6px">${SHORT[it.stage]}</div><div class="bar"><i class="f-${st(it).k}" style="width:${(it.stage+1)/STAGES.length*100}%"></i></div>${obs(it)}</div>`).join("")}</div>`],
+["3 · Resumo gerencial (KPIs)",L=>{
   const c={g:0,y:0,r:0,d:0};L.forEach(i=>c[st(i).k]++);
   const crit=L.filter(i=>["r","y"].includes(st(i).k));
   return `<div class="kpi"><div class="g"><b>${c.g}</b>no prazo / coletado</div><div class="y"><b>${c.y}</b>atenção</div><div class="r"><b>${c.r}</b>atrasado</div><div class="d"><b>${c.d}</b>concluído / s. data</div></div>
   <h3>Por etapa</h3><div class="kpi">${STAGES.map((s,i)=>`<div class="d"><b>${L.filter(x=>x.stage==i).length}</b>${SHORT[i]}</div>`).join("")}</div>
   <h3>Exigem ação agora</h3><div class="grid">${crit.map(mini).join("")||'<div class="empty">Nada crítico.</div>'}</div>`}],
-["7 · Agenda por dia",L=>{
-  const g={};L.forEach(i=>{const r=ref(i);const k=r?`Coleta ${pad(r.getDate())}/${pad(r.getMonth()+1)}`:"Sem data de coleta";(g[k]=g[k]||[]).push(i)});
-  return Object.entries(g).map(([k,a])=>`<h3 class="day">${k}</h3>`+a.map(it=>`<div class="ag" data-id="${it.id}"><b>${esc(it.transp)||"—"}</b><div><b>${esc(it.boat)}</b> <span class="mut small">· ${SHORT[it.stage]}</span>${obs(it)}</div>${pill(it)}</div>`).join("")).join("")}],
-["8 · Esteira por barco (etapas)",L=>L.map(it=>`<div class="sw" data-id="${it.id}"><div><b>${esc(it.boat)}</b><div class="small mut">🚚 ${esc(it.transp)||"—"}<br>Coleta: ${fmtD(it.coleta)}</div></div><div><div class="stp">${STAGES.map((_,i)=>`${i?'<em></em>':''}<span class="${i<it.stage?'dn':i==it.stage?(it.stage==LAST?'dn':'cu'):''}"></span>`).join("")}</div><div class="stl">${SHORT.map(s=>`<span>${s}</span>`).join("")}</div></div><div style="text-align:right">${pill(it)}</div></div>`).join("")],
-["9 · Contagem regressiva",L=>`<div class="grid">${L.filter(i=>i.stage<COL).map(it=>{const s=st(it);return `<div class="card bl-${s.k}" data-id="${it.id}"><b>${esc(it.boat)}</b><div class="cd-big" style="color:var(--${s.k})">${s.diff==null?"—":(s.diff<0?"−":"")+dur(s.diff)}</div><div class="small mut">coleta em ${fmtD(it.coleta)} · 🚚 ${esc(it.transp)||"—"}</div><div class="small" style="margin-top:4px">${SHORT[it.stage]}</div>${obs(it)}</div>`}).join("")}</div>`],
-["10 · Frota (53 barcos)",L=>{
+["4 · Esteira por barco (etapas)",L=>L.map(it=>`<div class="sw" data-id="${it.id}"><div><b>${esc(it.boat)}</b><div class="small mut">🚚 ${esc(it.transp)||"—"}<br>Coleta: ${fmtD(it.coleta)}</div></div><div><div class="stp">${STAGES.map((_,i)=>`${i?'<em></em>':''}<span class="${i<it.stage?'dn':i==it.stage?(it.stage==LAST?'dn':'cu'):''}"></span>`).join("")}</div><div class="stl">${SHORT.map(s=>`<span>${s}</span>`).join("")}</div></div><div style="text-align:right">${pill(it)}</div></div>`).join("")],
+["5 · Contagem regressiva",L=>`<div class="grid">${L.filter(i=>i.stage<COL).map(it=>{const s=st(it);return `<div class="card bl-${s.k}" data-id="${it.id}"><b>${esc(it.boat)}</b><div class="cd-big" style="color:var(--${s.k})">${s.diff==null?"—":(s.diff<0?"−":"")+dur(s.diff)}</div><div class="small mut">coleta em ${fmtD(it.coleta)} · 🚚 ${esc(it.transp)||"—"}</div><div class="small" style="margin-top:4px">${SHORT[it.stage]}</div>${obs(it)}</div>`}).join("")}</div>`],
+["6 · Frota (53 barcos)",L=>{
   const by={};L.forEach(i=>(by[i.boat]=by[i.boat]||[]).push(i));
   const rank={r:3,y:2,g:1,d:0};
   return `<div class="fleet">${BOATS.map(b=>{const a=(by[b]||[]).filter(i=>i.stage<LAST);const all=by[b]||[];
@@ -438,7 +425,7 @@ function render(){
   if(!p){$("#app").innerHTML=analise();return}
   $("#views").innerHTML=VIEWS.map((v,i)=>`<button class="${i==view?"on":""}" data-v="${i}">${v[0]}</button>`).join("");
   const L=shown(),out=VIEWS[view][1](L);
-  $("#app").innerHTML=(view==9||L.length)?out:'<div class="empty">Nenhum lançamento. Clique em “+ Novo lançamento”.</div>';
+  $("#app").innerHTML=(view==5||L.length)?out:'<div class="empty">Nenhum lançamento. Clique em “+ Novo lançamento”.</div>';
 }
 function renderHist(){
   $("#hist").innerHTML=draftAt.length?`<div class="small mut" style="margin-top:10px"><b>Atrasos já registrados neste lançamento</b></div>`+draftAt.map(a=>`<div><span style="flex:1">${fmt(a.de)} → <b>${fmt(a.para)}</b> <span class="pill r">+${dur(new Date(a.para)-new Date(a.de))}</span><br>${esc(a.motivo)}</span><button type="button" data-delat="${a.id}" title="Remover este registro">✕</button></div>`).join(""):"";
