@@ -606,27 +606,47 @@ if(CLOUD){gate(true);cloudStart()}
   #tvw .s0{background:#7A96A8}#tvw .s1{background:#FC8F01}#tvw .s2{background:#3599B8}#tvw .s3{background:#8DBC29}
   #tvw .wb{font-weight:800;font-size:1.1em;line-height:1.15}
   #tvw .wm{font-size:.8em;color:#66788a;line-height:1.2}
-  #tvw .wempty{margin:auto;font-size:3vh;color:#66788a}`;
+  #tvw .wempty{margin:auto;font-size:3vh;color:#66788a}
+  #tvw .s4{background:#004765}
+  #tvw .wnone{font-size:.8em;color:#8a97a3;text-align:center;padding:10px 0}
+  #tvw .wnote{flex:none;text-align:center;font-size:15px;color:#66788a;padding-top:6px}
+  /* dia que já passou: coluna acinzentada, status continua visível */
+  #tvw .wd.past{background:#d3d7db}
+  #tvw .wd.past h3,#tvw .wd.past h3 small{color:#7b8791}
+  #tvw .wd.past .wc.ok{background:#e9ebed;border-color:#cdd2d6;border-left-color:#a9b2b9}
+  #tvw .wd.past .wc.ok .wh,#tvw .wd.past .wc.ok .wb{color:#6a7580}
+  #tvw .wd.past .wc.ok .wm{color:#8b959e}
+  #tvw .wd.past .wc.ok .ws{filter:grayscale(.55)}
+  #tvw .wd.past .wnone{color:#8b959e}`;
   document.head.appendChild(css);
   const box=document.createElement("div");box.id="tvw";document.body.appendChild(box);
-  const WST=["Separação","Emissão de NF","NF emitida","Coleta realizada"];
+  const WST=["Separação","Emissão de NF","NF emitida","Coletado","Entregue"];
   const WD=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
   let timer=null;
   function draw(){
-    const L=sorted(items.filter(it=>it.stage<COL));
-    const g=new Map();
-    L.forEach(it=>{const r=ref(it);const k=r?r.getFullYear()+"-"+pad(r.getMonth()+1)+"-"+pad(r.getDate()):"zz";if(!g.has(k))g.set(k,[]);g.get(k).push(it)});
-    const hoje=new Date(),hk=hoje.getFullYear()+"-"+pad(hoje.getMonth()+1)+"-"+pad(hoje.getDate());
-    const keys=[...g.keys()].sort();
+    // semana fixa: segunda a sexta (sábado/domingo mostram a semana seguinte)
+    const hoje=new Date(),hk=ymd(hoje),dow=hoje.getDay();
+    const seg=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()+(dow===0?1:dow===6?2:1-dow),12);
+    const days=[0,1,2,3,4].map(i=>new Date(seg.getFullYear(),seg.getMonth(),seg.getDate()+i,12));
+    const keys=days.map(ymd);
+    const g=new Map(keys.map(k=>[k,[]]));
+    let fora=0,sem=0;
+    sorted(items).forEach(it=>{const r=ref(it);
+      if(!r){if(it.stage<COL)sem++;return}
+      const k=ymd(r);
+      if(g.has(k))g.get(k).push(it);else if(it.stage<COL&&k>keys[4])fora++;
+    });
+    const nota=[fora?fora+" programado(s) para as próximas semanas":"",sem?sem+" sem data de coleta":""].filter(Boolean).join(" · ");
     box.innerHTML='<div class="wt">Painel PSS / Carga Programada</div>'+
-      (keys.length?'<div class="wg">'+keys.map(k=>{
-        const a=g.get(k),d=k==="zz"?null:new Date(k+"T12:00");
-        const h=d?WD[d.getDay()]+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1)+(k===hk?"<small>hoje</small>":""):"Sem data de coleta";
-        return '<div class="wd"><h3>'+h+'</h3>'+a.map(it=>{const s=st(it),r=ref(it);
-          return '<div class="wc k'+s.k+'"><div class="w1"><span class="wh">'+(r?pad(r.getHours())+":"+pad(r.getMinutes()):"—")+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'}).join("")+'</div>'}).join("")+'</div>'
-      :'<div class="wempty">Nenhum barco programado</div>');
+      '<div class="wg">'+days.map((d,i)=>{
+        const k=keys[i],a=g.get(k),past=k<hk;
+        const h=WD[d.getDay()]+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1)+(k===hk?"<small>hoje</small>":"");
+        return '<div class="wd'+(past?" past":"")+'"><h3>'+h+'</h3>'+(a.length?a.map(it=>{const s=st(it),r=ref(it);
+          return '<div class="wc k'+s.k+(past&&it.stage>=COL?" ok":"")+'"><div class="w1"><span class="wh">'+pad(r.getHours())+":"+pad(r.getMinutes())+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'}).join(""):'<div class="wnone">Sem coletas</div>')+'</div>'}).join("")+'</div>'+
+      (nota?'<div class="wnote">'+nota+'</div>':"");
     const gr=box.querySelector(".wg"); if(!gr)return;
-    gr.style.gridTemplateColumns="repeat("+keys.length+",1fr)";
+    gr.style.gridTemplateColumns="repeat(5,1fr)";
     const cs=[...gr.querySelectorAll(".wc")];
     for(let fs=34;fs>=9;fs-=1){
       gr.style.fontSize=fs+"px";
