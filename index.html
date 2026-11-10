@@ -617,12 +617,36 @@ if(CLOUD){gate(true);cloudStart()}
   #tvw .wd.past .wc.ok .wh,#tvw .wd.past .wc.ok .wb{color:#6a7580}
   #tvw .wd.past .wc.ok .wm{color:#8b959e}
   #tvw .wd.past .wc.ok .ws{filter:grayscale(.55)}
-  #tvw .wd.past .wnone{color:#8b959e}`;
+  #tvw .wd.past .wnone{color:#8b959e}
+  #tvw.mob{padding:0;background:#f4f6f8}
+  #tvw .mh{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border-bottom:1px solid #d9e0e7}
+  #tvw .mlogo{height:36px;width:auto}
+  #tvw .mh span{flex:1;font-weight:800;color:#004765;font-size:16px;line-height:1.15}
+  #tvw .mx{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid #cfd8e0;background:#f4f6f8;color:#004765;font-size:18px;line-height:1}
+  #tvw .mtabs{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 8px 6px}
+  #tvw .mt{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 5px;border:1px solid #cfd8e0;border-radius:10px;background:#fff;color:#004765;font:inherit}
+  #tvw .mt b{font-size:14px}
+  #tvw .mt span{font-size:11px;color:#66788a}
+  #tvw .mt i{font-style:normal;font-size:11px;font-weight:700;background:#e6ebf0;border-radius:99px;padding:0 8px;margin-top:2px}
+  #tvw .mt.today{box-shadow:0 0 0 2px #FC8F01}
+  #tvw .mt.past{background:#d3d7db;color:#7b8791;border-color:#c3c8cc}
+  #tvw .mt.past span{color:#8b959e}
+  #tvw .mt.sel{background:#004765;color:#fff;border-color:#004765}
+  #tvw .mt.sel span{color:#cfe3ee}
+  #tvw .mt.sel i{background:#fff;color:#004765}
+  #tvw .mt.past.sel{background:#6b7680;border-color:#6b7680}
+  #tvw .mtitle{flex:none;padding:6px 14px 4px;font-weight:800;color:#004765;font-size:15px}
+  #tvw .mlist{flex:1;min-height:0;overflow-y:auto;margin:0 8px 8px;padding:8px;font-size:16px;-webkit-overflow-scrolling:touch}
+  #tvw .mlist .wc{margin-bottom:10px;padding:9px 12px}
+  #tvw .mlist .wm{font-size:.9em}`;
   document.head.appendChild(css);
   const box=document.createElement("div");box.id="tvw";document.body.appendChild(box);
   const WST=["Separação","Emissão de NF","NF emitida","Coletado","Entregue"];
   const WD=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
   const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  let dismissed=false,selDay=null,curKeys=[];
+  const isMob=()=>innerWidth<700;
+  const WDL=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
   let timer=null;
   function draw(){
     // semana fixa: segunda a sexta (sábado/domingo mostram a semana seguinte)
@@ -638,13 +662,27 @@ if(CLOUD){gate(true);cloudStart()}
       if(g.has(k))g.get(k).push(it);else if(it.stage<COL&&k>keys[4])fora++;
     });
     const nota=[fora?fora+" programado(s) para as próximas semanas":"",sem?sem+" sem data de coleta":""].filter(Boolean).join(" · ");
+    const card=(it,past)=>{const s=st(it),r=ref(it);
+      return '<div class="wc k'+s.k+(past&&it.stage>=COL?" ok":"")+'"><div class="w1"><span class="wh">'+pad(r.getHours())+":"+pad(r.getMinutes())+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'};
+    const notaH=nota?'<div class="wnote">'+nota+'</div>':"";
+    if(isMob()){
+      box.classList.add("mob"); curKeys=keys;
+      if(!selDay||!keys.includes(selDay))selDay=keys.includes(hk)?hk:keys[0];
+      const old=box.querySelector(".mlist"),sc=old?old.scrollTop:0;
+      const sd=days[keys.indexOf(selDay)],sa=g.get(selDay),sp=selDay<hk;
+      box.innerHTML='<div class="mh"><img class="mlogo" alt="OceanPact" src="LOGO%20Oceanpact.png" onerror="this.remove()"><span>Painel PSS / Carga Programada</span><button class="mx" onclick="tvClose()" aria-label="Fechar">✕</button></div>'+
+        '<div class="mtabs">'+days.map((d,i)=>{const k=keys[i];return '<button class="mt'+(k===selDay?" sel":"")+(k<hk?" past":"")+(k===hk?" today":"")+'" data-k="'+k+'"><b>'+WD[d.getDay()]+'</b><span>'+pad(d.getDate())+"/"+pad(d.getMonth()+1)+'</span><i>'+g.get(k).length+'</i></button>'}).join("")+'</div>'+
+        '<div class="mtitle">'+WDL[sd.getDay()]+", "+pad(sd.getDate())+"/"+pad(sd.getMonth()+1)+(selDay===hk?" · hoje":sp?" · dia encerrado":"")+'</div>'+
+        '<div class="mlist wd'+(sp?" past":"")+'">'+(sa.length?sa.map(it=>card(it,sp)).join(""):'<div class="wnone">Sem coletas</div>')+'</div>'+notaH;
+      const nl=box.querySelector(".mlist"); if(nl)nl.scrollTop=sc;
+      return;
+    }
+    box.classList.remove("mob");
     box.innerHTML='<div class="wt">Painel PSS / Carga Programada</div>'+
       '<div class="wg">'+days.map((d,i)=>{
         const k=keys[i],a=g.get(k),past=k<hk;
         const h=WD[d.getDay()]+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1)+(k===hk?"<small>hoje</small>":"");
-        return '<div class="wd'+(past?" past":"")+'"><h3>'+h+'</h3>'+(a.length?a.map(it=>{const s=st(it),r=ref(it);
-          return '<div class="wc k'+s.k+(past&&it.stage>=COL?" ok":"")+'"><div class="w1"><span class="wh">'+pad(r.getHours())+":"+pad(r.getMinutes())+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'}).join(""):'<div class="wnone">Sem coletas</div>')+'</div>'}).join("")+'</div>'+
-      (nota?'<div class="wnote">'+nota+'</div>':"");
+        return '<div class="wd'+(past?" past":"")+'"><h3>'+h+'</h3>'+(a.length?a.map(it=>card(it,past)).join(""):'<div class="wnone">Sem coletas</div>')+'</div>'}).join("")+'</div>'+notaH;
     const gr=box.querySelector(".wg"); if(!gr)return;
     gr.style.gridTemplateColumns="repeat(5,1fr)";
     const cs=[...gr.querySelectorAll(".wc")];
@@ -656,14 +694,19 @@ if(CLOUD){gate(true);cloudStart()}
       if(gr.scrollHeight<=gr.clientHeight+1&&gr.scrollWidth<=gr.clientWidth+1)break;
     }
   }
-  function open_(){document.body.style.overflow="hidden";box.classList.add("on");draw();clearInterval(timer);timer=setInterval(draw,30000);
-    try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(e){}}
+  function open_(){document.body.style.overflow="hidden";box.classList.add("on");draw();clearInterval(timer);timer=setInterval(draw,isMob()?5000:30000);
+    try{!isMob()&&document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(e){}}
   function close_(){document.body.style.overflow="";box.classList.remove("on");clearInterval(timer);
     try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
     if(location.hash==="#tv")history.replaceState(null,"",location.pathname+location.search)}
-  window.tvOn=open_;window.tvOff=close_;
+  window.tvOn=open_;window.tvOff=close_;window.tvClose=()=>{dismissed=true;close_()};
   addEventListener("keydown",e=>{if(e.key==="Escape"&&box.classList.contains("on"))close_()});
-  box.addEventListener("dblclick",close_);
+  box.addEventListener("dblclick",()=>{if(!isMob())close_()});
+  const novoDia=k=>{selDay=k;draw();const l=box.querySelector(".mlist");if(l)l.scrollTop=0};
+  box.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest(".mt");if(t)novoDia(t.dataset.k)});
+  let tx=0,ty=0;
+  box.addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+  box.addEventListener("touchend",e=>{if(!isMob())return;const t=e.changedTouches[0],dx=t.clientX-tx,dy=t.clientY-ty;if(Math.abs(dx)<60||Math.abs(dx)<1.5*Math.abs(dy))return;const i=curKeys.indexOf(selDay)+(dx<0?1:-1);if(i>=0&&i<curKeys.length)novoDia(curKeys[i])},{passive:true});
   addEventListener("resize",()=>{if(box.classList.contains("on")){clearTimeout(window.__twR);window.__twR=setTimeout(draw,250)}});
   document.addEventListener("fullscreenchange",()=>{if(box.classList.contains("on")){setTimeout(draw,400);setTimeout(draw,1200)}});
   const exp=document.getElementById("exp");
@@ -672,6 +715,13 @@ if(CLOUD){gate(true);cloudStart()}
     exp.parentNode.insertBefore(b,exp);
   }
   if(location.hash==="#tv")setTimeout(open_,1200);
+  // celular: abre direto na visão mobile depois do login; ✕ leva ao painel completo
+  setInterval(()=>{
+    if(!isMob())return;
+    const on=box.classList.contains("on"),logged=typeof me!=="undefined"&&!!me;
+    if(!logged){dismissed=false;if(on)close_();return}
+    if(!on&&!dismissed)open_();
+  },1000);
 })();
 /* Logo OceanPact no Modo TV */
 (function(){
