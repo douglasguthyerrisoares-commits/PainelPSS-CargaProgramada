@@ -598,6 +598,74 @@ $("#dlg").addEventListener("close",()=>render());
 setInterval(()=>{if(syncSt=="err")syncPush();if(!$("#dlg").open)render()},60000);
 render();
 if(CLOUD){gate(true);cloudStart()}
+
+/* ===== Modo TV (cards por dia, etapa ao lado do horário) ===== */
+(function(){
+  if(window.__tvMode) return; window.__tvMode=true;
+  const css=document.createElement("style");
+  css.textContent=`
+  #tvw{position:fixed;inset:0;z-index:99998;background:#f4f6f8;display:none;flex-direction:column;padding:6px 10px 10px;box-sizing:border-box;color:#1b2733;font-family:system-ui,"Segoe UI",Arial,sans-serif}
+  #tvw.on{display:flex}
+  #tvw .wt{text-align:center;font-size:44px;line-height:72px;font-weight:800;color:#004765;flex:none}
+  #tvw .wg{flex:1;min-height:0;display:grid;gap:10px;align-items:start;overflow:hidden}
+  #tvw .wd{background:#e6ebf0;border-radius:8px;padding:8px;min-width:0}
+  #tvw .wd h3{margin:0 2px 8px;font-size:1.1em;color:#004765;white-space:nowrap}
+  #tvw .wd h3 small{font-weight:600;color:#66788a;margin-left:.4em;font-size:.8em}
+  #tvw .wc{background:#fff;border:1px solid #d9e0e7;border-left:6px solid #66788a;border-radius:8px;padding:7px 10px;margin-bottom:8px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;overflow:hidden}
+  #tvw .wc.kg{border-left-color:#1e9e57}#tvw .wc.ky{border-left-color:#d99a00}#tvw .wc.kr{border-left-color:#d63b3b}
+  #tvw .w1{display:flex;align-items:center;gap:.5em;flex-wrap:wrap}
+  #tvw .wh{font-size:1.5em;font-weight:800;line-height:1.1}
+  #tvw .ws{font-size:.78em;font-weight:700;padding:.1em .6em;border-radius:99px;color:#fff;white-space:nowrap}
+  #tvw .s0{background:#7A96A8}#tvw .s1{background:#FC8F01}#tvw .s2{background:#3599B8}#tvw .s3{background:#8DBC29}
+  #tvw .wb{font-weight:800;font-size:1.1em;line-height:1.15}
+  #tvw .wm{font-size:.8em;color:#66788a;line-height:1.2}
+  #tvw .wempty{margin:auto;font-size:3vh;color:#66788a}`;
+  document.head.appendChild(css);
+  const box=document.createElement("div");box.id="tvw";document.body.appendChild(box);
+  const WST=["Separação","Emissão de NF","NF emitida","Coleta realizada"];
+  const WD=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  let timer=null;
+  function draw(){
+    const L=sorted(items.filter(it=>it.stage<COL));
+    const g=new Map();
+    L.forEach(it=>{const r=ref(it);const k=r?r.getFullYear()+"-"+pad(r.getMonth()+1)+"-"+pad(r.getDate()):"zz";if(!g.has(k))g.set(k,[]);g.get(k).push(it)});
+    const hoje=new Date(),hk=hoje.getFullYear()+"-"+pad(hoje.getMonth()+1)+"-"+pad(hoje.getDate());
+    const keys=[...g.keys()].sort();
+    box.innerHTML='<div class="wt">Painel PSS / Carga Programada</div>'+
+      (keys.length?'<div class="wg">'+keys.map(k=>{
+        const a=g.get(k),d=k==="zz"?null:new Date(k+"T12:00");
+        const h=d?WD[d.getDay()]+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1)+(k===hk?"<small>hoje</small>":""):"Sem data de coleta";
+        return '<div class="wd"><h3>'+h+'</h3>'+a.map(it=>{const s=st(it),r=ref(it);
+          return '<div class="wc k'+s.k+'"><div class="w1"><span class="wh">'+(r?pad(r.getHours())+":"+pad(r.getMinutes()):"—")+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'}).join("")+'</div>'}).join("")+'</div>'
+      :'<div class="wempty">Nenhum barco programado</div>');
+    const gr=box.querySelector(".wg"); if(!gr)return;
+    gr.style.gridTemplateColumns="repeat("+keys.length+",1fr)";
+    const cs=[...gr.querySelectorAll(".wc")];
+    for(let fs=34;fs>=9;fs-=1){
+      gr.style.fontSize=fs+"px";
+      cs.forEach(c=>c.style.height="");
+      const m=Math.max(0,...cs.map(c=>c.offsetHeight));
+      cs.forEach(c=>c.style.height=m+"px");
+      if(gr.scrollHeight<=gr.clientHeight+1&&gr.scrollWidth<=gr.clientWidth+1)break;
+    }
+  }
+  function open_(){document.body.style.overflow="hidden";box.classList.add("on");draw();clearInterval(timer);timer=setInterval(draw,30000);
+    try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(e){}}
+  function close_(){document.body.style.overflow="";box.classList.remove("on");clearInterval(timer);
+    try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
+    if(location.hash==="#tv")history.replaceState(null,"",location.pathname+location.search)}
+  window.tvOn=open_;window.tvOff=close_;
+  addEventListener("keydown",e=>{if(e.key==="Escape"&&box.classList.contains("on"))close_()});
+  box.addEventListener("dblclick",close_);
+  addEventListener("resize",()=>{if(box.classList.contains("on")){clearTimeout(window.__twR);window.__twR=setTimeout(draw,250)}});
+  document.addEventListener("fullscreenchange",()=>{if(box.classList.contains("on")){setTimeout(draw,400);setTimeout(draw,1200)}});
+  const exp=document.getElementById("exp");
+  if(exp&&!document.getElementById("tvbtn")){
+    const b=document.createElement("button");b.id="tvbtn";b.textContent="📺 Modo TV";b.onclick=open_;
+    exp.parentNode.insertBefore(b,exp);
+  }
+  if(location.hash==="#tv")setTimeout(open_,1200);
+})();
 </script>
 </body>
 </html>
