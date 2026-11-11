@@ -662,8 +662,9 @@ if(CLOUD){gate(true);cloudStart()}
       if(g.has(k))g.get(k).push(it);else if(it.stage<COL&&k>keys[4])fora++;
     });
     const nota=[fora?fora+" programado(s) para as próximas semanas":"",sem?sem+" sem data de coleta":""].filter(Boolean).join(" · ");
+    const prevH=it=>{const m=/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(it.prev||"");if(!m)return '<div class="wm">🕒 Prev entrega: —</div>';const now=new Date(),due=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]),dd=new Date(+m[1],+m[2]-1,+m[3]),hj=new Date(now.getFullYear(),now.getMonth(),now.getDate());let dc="",tc="";if(it.stage<LAST){if(dd<hj)dc=tc="#d32f2f";else if(+dd===+hj){const df=(due-now)/60000;if(df<0)tc="#d32f2f";else if(df<=60)tc="#e0a100"}}const sp=(t,c)=>c?'<b style="color:'+c+'">'+t+"</b>":t;return '<div class="wm">🕒 Prev entrega: '+sp(m[3]+"/"+m[2],dc)+" "+sp(m[4]+":"+m[5],tc)+"</div>"};
     const card=(it,past)=>{const s=st(it),r=ref(it);
-      return '<div class="wc k'+s.k+(past&&it.stage>=COL?" ok":"")+'"><div class="w1"><span class="wh">'+pad(r.getHours())+":"+pad(r.getMinutes())+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div></div>'};
+      return '<div class="wc k'+s.k+(past&&it.stage>=COL?" ok":"")+'"><div class="w1"><span class="wh">'+pad(r.getHours())+":"+pad(r.getMinutes())+'</span><span class="ws s'+it.stage+'">'+WST[it.stage]+'</span></div><div class="wb">'+esc(it.boat)+'</div><div class="wm">🚚 '+esc(it.transp)+'</div><div class="wm">📍 '+esc(it.local)+'</div>'+prevH(it)+'</div>'};
     const notaH=nota?'<div class="wnote">'+nota+'</div>':"";
     if(isMob()){
       box.classList.add("mob"); curKeys=keys;
