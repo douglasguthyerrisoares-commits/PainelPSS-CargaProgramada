@@ -730,12 +730,12 @@ if(CLOUD){gate(true);cloudStart()}
   s.textContent='#tvw .wt{position:relative}#tvw .wt img.tvlogo{position:absolute;left:4px;top:0;height:72px;width:auto}';
   document.head.appendChild(s);
   const box=document.getElementById("tvw"); if(!box)return;
-  const put=()=>{const w=box.querySelector(".wt"); if(w&&!w.querySelector("img.tvlogo")){const i=document.createElement("img");i.className="tvlogo";i.alt="OceanPact";i.src="LOGO%20Oceanpact.png";i.onerror=()=>i.remove();w.prepend(i)}};
+  const put=()=>{const w=box.querySelector(".wt"); if(w&&!w.querySelector("img.tvlogo")){const i=document.createElement("img");i.className="tvlogo";i.alt="OceanPact";i.src="LOGO%20Oceanpact.png";const b=document.createElement("span");b.className="tvcbo";b.innerHTML="<i></i>CBO";const g=document.createElement("span");g.className="tvtag";g.innerHTML="Juntos Para Navegar <b>Mais Longe</b>";i.onerror=()=>{i.remove();b.remove();g.remove()};w.prepend(i);w.appendChild(b);w.appendChild(g)}};
   new MutationObserver(put).observe(box,{childList:true});
   put();
 })();
 /* Logo maior no Modo TV */
-(function(){const s=document.createElement("style");s.textContent='#tvw .wt{line-height:100px!important;min-height:100px}#tvw .wt img.tvlogo{height:100px!important;left:6px!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement("style");s.textContent='#tvw .wt{line-height:100px!important;min-height:100px}#tvw .wt img.tvlogo{height:100px!important;left:6px!important}#tvw .wt img.tvlogo{clip-path:inset(0 0 36% 0)}#tvw .wt .tvcbo{position:absolute;left:166px;top:30px;line-height:44px;font-size:27px;font-weight:400;color:#004a64;white-space:nowrap;font-family:"Segoe UI",system-ui,Arial,sans-serif;}#tvw .wt .tvcbo i{display:inline-block;width:2px;height:28px;background:#FC8F01;margin-right:10px;vertical-align:middle}#tvw .wt .tvtag{position:absolute;left:62px;top:76px;line-height:18px;font-size:11px;font-weight:600;color:#004a64;white-space:nowrap;font-family:"Segoe UI",system-ui,Arial,sans-serif;}#tvw .wt .tvtag b{font-weight:800}';document.head.appendChild(s)})();
 </script>
 </body>
 </html>
